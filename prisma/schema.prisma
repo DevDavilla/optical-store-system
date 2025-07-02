@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Cliente {
+  id             String    @id @default(uuid())
+  nome           String
+  cpf            String?   @unique // CPF pode ser nulo, mas se existir, deve ser único
+  rg             String?
+  dataNascimento DateTime? // Data de nascimento, pode ser nula
+  telefone       String?
+  email          String?   @unique
+  endereco       String?   // Ex: Rua, número, complemento
+  cidade         String?
+  estado         String?
+  cep            String?
+  observacoes    String?   @db.Text // @db.Text para textos mais longos no PostgreSQL
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relacionamentos futuros (vamos adicioná-los mais tarde)
+  // receitas Receita[] // Um cliente pode ter várias receitas
+  // vendas   Venda[]   // Um cliente pode ter várias vendas
+}
