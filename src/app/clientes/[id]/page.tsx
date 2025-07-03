@@ -6,6 +6,25 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation"; // Importa useParams para pegar o ID da URL
 import Link from "next/link"; // Importa Link para o botão de voltar
 
+// Interface Receita (mantida aqui ou em um arquivo global de tipos)
+interface Receita {
+  id: string;
+  dataReceita: string;
+  odEsferico?: number;
+  odCilindrico?: number;
+  odEixo?: number;
+  odAdicao?: number;
+  oeEsferico?: number;
+  oeCilindrico?: number;
+  oeEixo?: number;
+  oeAdicao?: number;
+  distanciaPupilar?: number;
+  observacoes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Interface Cliente agora inclui 'receitas'
 interface Cliente {
   id: string;
   nome: string;
@@ -21,6 +40,7 @@ interface Cliente {
   observacoes?: string;
   createdAt: string;
   updatedAt: string;
+  receitas: Receita[]; // Array de receitas associadas
 }
 
 export default function ClienteDetailPage() {
@@ -31,7 +51,6 @@ export default function ClienteDetailPage() {
 
   useEffect(() => {
     if (!id) {
-      // Garante que o ID existe antes de tentar buscar
       setLoading(false);
       setError("ID do cliente não fornecido.");
       return;
@@ -101,7 +120,11 @@ export default function ClienteDetailPage() {
           Detalhes de {cliente.nome}
         </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-lg mb-8">
+        {/* Informações Pessoais do Cliente */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-lg mb-8 border-b pb-6">
+          <h2 className="lg:col-span-3 text-2xl font-semibold mb-4 text-gray-700">
+            Informações Pessoais
+          </h2>
           <p>
             <strong>Nome:</strong> {cliente.nome}
           </p>
@@ -120,7 +143,7 @@ export default function ClienteDetailPage() {
           <p>
             <strong>Data de Nascimento:</strong> {formattedDataNascimento}
           </p>
-          <p className="md:col-span-2">
+          <p className="md:col-span-2 lg:col-span-3">
             <strong>Endereço:</strong> {cliente.endereco || "Não informado"}
           </p>
           <p>
@@ -132,7 +155,7 @@ export default function ClienteDetailPage() {
           <p>
             <strong>CEP:</strong> {cliente.cep || "Não informado"}
           </p>
-          <p className="md:col-span-2">
+          <p className="md:col-span-2 lg:col-span-3">
             <strong>Observações:</strong> {cliente.observacoes || "Nenhuma"}
           </p>
           <p>
@@ -145,9 +168,66 @@ export default function ClienteDetailPage() {
           </p>
         </div>
 
+        {/* Seção de Receitas do Cliente */}
+        <div className="mt-8">
+          <h2 className="text-2xl font-semibold mb-4 text-gray-700">
+            Receitas Associadas
+          </h2>
+          {cliente.receitas.length === 0 ? (
+            <p className="text-lg text-gray-600">
+              Nenhuma receita cadastrada para este cliente ainda.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white border border-gray-200 shadow-md rounded-lg">
+                <thead>
+                  <tr className="bg-gray-100 border-b">
+                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                      Data
+                    </th>
+                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                      OD Esférico
+                    </th>
+                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                      OE Esférico
+                    </th>
+                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cliente.receitas.map((receita) => (
+                    <tr key={receita.id} className="border-b hover:bg-gray-50">
+                      <td className="py-4 px-4 text-gray-800">
+                        {new Date(receita.dataReceita).toLocaleDateString(
+                          "pt-BR"
+                        )}
+                      </td>
+                      <td className="py-4 px-4 text-gray-800">
+                        {receita.odEsferico ?? "N/A"}
+                      </td>
+                      <td className="py-4 px-4 text-gray-800">
+                        {receita.oeEsferico ?? "N/A"}
+                      </td>
+                      <td className="py-4 px-4">
+                        <Link href={`/receitas/${receita.id}`}>
+                          <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs">
+                            Ver Detalhes
+                          </button>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
         {/* Botão de voltar para a lista de clientes */}
         <Link href="/clientes">
-          <button className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md shadow-sm">
+          <button className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md shadow-sm mt-8">
             Voltar para a Lista
           </button>
         </Link>

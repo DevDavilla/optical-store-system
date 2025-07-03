@@ -1,101 +1,328 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 
-interface ClienteFormProps {
-  formData: any;
-  formError: string | null;
-  isSubmitting: boolean;
-  editingClientId: string | null;
-  onChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => void;
-  onSubmit: (e: React.FormEvent) => void;
-  onCancel: () => void;
+interface Cliente {
+  id: string;
+  nome: string;
+  telefone?: string;
+  email?: string;
+  cpf?: string;
+  rg?: string;
+  dataNascimento?: string;
+  endereco?: string;
+  cidade?: string;
+  estado?: string;
+  cep?: string;
+  observacoes?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export default function ClienteForm({
-  formData,
-  formError,
-  isSubmitting,
-  editingClientId,
-  onChange,
+interface ClientFormProps {
+  onSubmit: (data: Partial<Cliente>) => Promise<void>;
+  initialData?: Partial<Cliente> | null;
+  onCancelEdit?: () => void;
+  isSubmitting: boolean;
+  formError: string | null;
+}
+
+export default function ClientForm({
   onSubmit,
-  onCancel,
-}: ClienteFormProps) {
+  initialData,
+  onCancelEdit,
+  isSubmitting,
+  formError,
+}: ClientFormProps) {
+  const [formData, setFormData] = useState<Partial<Cliente>>({
+    nome: "",
+    email: "",
+    telefone: "",
+    cpf: "",
+    rg: "",
+    dataNascimento: "",
+    endereco: "",
+    cidade: "",
+    estado: "",
+    cep: "",
+    observacoes: "",
+  });
+
+  useEffect(() => {
+    if (initialData) {
+      const formattedDate = initialData.dataNascimento
+        ? new Date(initialData.dataNascimento).toISOString().split("T")[0]
+        : "";
+      setFormData({
+        ...initialData,
+        dataNascimento: formattedDate,
+      });
+    } else {
+      setFormData({
+        nome: "",
+        email: "",
+        telefone: "",
+        cpf: "",
+        rg: "",
+        dataNascimento: "",
+        endereco: "",
+        cidade: "",
+        estado: "",
+        cep: "",
+        observacoes: "",
+      });
+    }
+  }, [initialData]);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmitInternal = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  const isEditing = !!initialData?.id;
+
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-      <h2 className="text-2xl font-semibold mb-4">
-        {editingClientId ? "Editar Cliente" : "Adicionar Novo Cliente"}
+    <div className="bg-white rounded-xl shadow-lg p-8 max-w-4xl mx-auto mb-12 transition-shadow hover:shadow-xl">
+      <h2 className="text-3xl font-semibold text-gray-900 mb-6 tracking-tight">
+        {isEditing ? "Editar Cliente" : "Adicionar Novo Cliente"}
       </h2>
       <form
-        onSubmit={onSubmit}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        onSubmit={handleSubmitInternal}
+        className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        noValidate
       >
-        {[
-          { label: "Nome", name: "nome" },
-          { label: "Email", name: "email" },
-          { label: "Telefone", name: "telefone" },
-          { label: "CPF", name: "cpf" },
-          { label: "RG", name: "rg" },
-          {
-            label: "Data de Nascimento",
-            name: "dataNascimento",
-            type: "date",
-          },
-          { label: "Endereço", name: "endereco" },
-          { label: "Cidade", name: "cidade" },
-          { label: "Estado", name: "estado" },
-          { label: "CEP", name: "cep" },
-        ].map(({ label, name, type = "text" }) => (
-          <div
-            key={name}
-            className={name === "endereco" ? "md:col-span-2" : ""}
+        {/** Campo Nome */}
+        <div>
+          <label
+            htmlFor="nome"
+            className="block mb-1 text-sm font-medium text-gray-700"
           >
-            <label
-              htmlFor={name}
-              className="block text-sm font-medium text-gray-700"
-            >
-              {label}:
-            </label>
-            <input
-              type={type}
-              id={name}
-              name={name}
-              value={formData[name] || ""}
-              onChange={onChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-            />
-          </div>
-        ))}
+            Nome <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="nome"
+            name="nome"
+            autoComplete="name"
+            placeholder="Nome completo"
+            value={formData.nome || ""}
+            onChange={handleInputChange}
+            required
+            className="w-full rounded-md border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+          />
+        </div>
 
+        {/** Email */}
+        <div>
+          <label
+            htmlFor="email"
+            className="block mb-1 text-sm font-medium text-gray-700"
+          >
+            Email
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            autoComplete="email"
+            placeholder="exemplo@email.com"
+            value={formData.email || ""}
+            onChange={handleInputChange}
+            className="w-full rounded-md border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+          />
+        </div>
+
+        {/** Telefone */}
+        <div>
+          <label
+            htmlFor="telefone"
+            className="block mb-1 text-sm font-medium text-gray-700"
+          >
+            Telefone
+          </label>
+          <input
+            type="tel"
+            id="telefone"
+            name="telefone"
+            autoComplete="tel"
+            placeholder="(XX) XXXXX-XXXX"
+            value={formData.telefone || ""}
+            onChange={handleInputChange}
+            className="w-full rounded-md border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+          />
+        </div>
+
+        {/** CPF */}
+        <div>
+          <label
+            htmlFor="cpf"
+            className="block mb-1 text-sm font-medium text-gray-700"
+          >
+            CPF
+          </label>
+          <input
+            type="text"
+            id="cpf"
+            name="cpf"
+            placeholder="000.000.000-00"
+            value={formData.cpf || ""}
+            onChange={handleInputChange}
+            className="w-full rounded-md border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+          />
+        </div>
+
+        {/** RG */}
+        <div>
+          <label
+            htmlFor="rg"
+            className="block mb-1 text-sm font-medium text-gray-700"
+          >
+            RG
+          </label>
+          <input
+            type="text"
+            id="rg"
+            name="rg"
+            placeholder="XX.XXX.XXX-X"
+            value={formData.rg || ""}
+            onChange={handleInputChange}
+            className="w-full rounded-md border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+          />
+        </div>
+
+        {/** Data de Nascimento */}
+        <div>
+          <label
+            htmlFor="dataNascimento"
+            className="block mb-1 text-sm font-medium text-gray-700"
+          >
+            Data de Nascimento
+          </label>
+          <input
+            type="date"
+            id="dataNascimento"
+            name="dataNascimento"
+            value={formData.dataNascimento || ""}
+            onChange={handleInputChange}
+            className="w-full rounded-md border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+          />
+        </div>
+
+        {/** Endereço (span 2 cols) */}
+        <div className="md:col-span-2">
+          <label
+            htmlFor="endereco"
+            className="block mb-1 text-sm font-medium text-gray-700"
+          >
+            Endereço
+          </label>
+          <input
+            type="text"
+            id="endereco"
+            name="endereco"
+            placeholder="Rua, número, complemento"
+            value={formData.endereco || ""}
+            onChange={handleInputChange}
+            className="w-full rounded-md border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+          />
+        </div>
+
+        {/** Cidade */}
+        <div>
+          <label
+            htmlFor="cidade"
+            className="block mb-1 text-sm font-medium text-gray-700"
+          >
+            Cidade
+          </label>
+          <input
+            type="text"
+            id="cidade"
+            name="cidade"
+            placeholder="Cidade"
+            value={formData.cidade || ""}
+            onChange={handleInputChange}
+            className="w-full rounded-md border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+          />
+        </div>
+
+        {/** Estado */}
+        <div>
+          <label
+            htmlFor="estado"
+            className="block mb-1 text-sm font-medium text-gray-700"
+          >
+            Estado
+          </label>
+          <input
+            type="text"
+            id="estado"
+            name="estado"
+            placeholder="Estado"
+            value={formData.estado || ""}
+            onChange={handleInputChange}
+            className="w-full rounded-md border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+          />
+        </div>
+
+        {/** CEP */}
+        <div>
+          <label
+            htmlFor="cep"
+            className="block mb-1 text-sm font-medium text-gray-700"
+          >
+            CEP
+          </label>
+          <input
+            type="text"
+            id="cep"
+            name="cep"
+            placeholder="00000-000"
+            value={formData.cep || ""}
+            onChange={handleInputChange}
+            className="w-full rounded-md border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+          />
+        </div>
+
+        {/** Observações - textarea full width */}
         <div className="md:col-span-2">
           <label
             htmlFor="observacoes"
-            className="block text-sm font-medium text-gray-700"
+            className="block mb-1 text-sm font-medium text-gray-700"
           >
-            Observações:
+            Observações
           </label>
           <textarea
             id="observacoes"
             name="observacoes"
             value={formData.observacoes || ""}
-            onChange={onChange}
-            rows={3}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-          ></textarea>
+            onChange={handleInputChange}
+            rows={4}
+            placeholder="Observações adicionais"
+            className="w-full rounded-md border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+          />
         </div>
 
         {formError && (
-          <p className="md:col-span-2 text-red-600 text-sm">{formError}</p>
+          <p className="md:col-span-2 text-red-600 text-sm font-medium select-none">
+            {formError}
+          </p>
         )}
 
-        <div className="md:col-span-2 flex justify-end space-x-2">
-          {editingClientId && (
+        <div className="md:col-span-2 flex justify-end space-x-4 mt-4">
+          {isEditing && (
             <button
               type="button"
-              onClick={onCancel}
-              className="mt-4 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md shadow-sm"
+              onClick={onCancelEdit}
+              className="rounded-md bg-gray-400 hover:bg-gray-500 text-gray-900 font-semibold px-6 py-2 transition focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50"
+              disabled={isSubmitting}
             >
               Cancelar
             </button>
@@ -103,11 +330,11 @@ export default function ClienteForm({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md shadow-sm"
+            className="rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
           >
             {isSubmitting
               ? "Salvando..."
-              : editingClientId
+              : isEditing
               ? "Salvar Edição"
               : "Adicionar Cliente"}
           </button>

@@ -30,7 +30,76 @@ model Cliente {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  // Relacionamentos futuros (vamos adicioná-los mais tarde)
-  // receitas Receita[] // Um cliente pode ter várias receitas
-  // vendas   Venda[]   // Um cliente pode ter várias vendas
+   receitas       Receita[]
+   agendamentos Agendamento[]
+
+ @@map("clientes") 
+}
+
+
+model Receita {
+  id                 String    @id @default(uuid())
+  clienteId          String    @map("cliente_id") // ID do cliente ao qual esta receita pertence
+  dataReceita        DateTime  @map("data_receita") @db.Date // Data da prescrição
+  observacoes        String?   // Observações gerais da receita
+
+  // Campos para o Olho Direito (OD)
+  odEsferico         Float?    @map("od_esferico")
+  odCilindrico       Float?    @map("od_cilindrico")
+  odEixo             Int?      @map("od_eixo")
+  odAdicao           Float?    @map("od_adicao")
+
+  // Campos para o Olho Esquerdo (OE)
+  oeEsferico         Float?    @map("oe_esferico")
+  oeCilindrico       Float?    @map("oe_cilindrico")
+  oeEixo             Int?      @map("oe_eixo")
+  oeAdicao           Float?    @map("oe_adicao")
+
+  // Distância Pupilar (DP)
+  distanciaPupilar   Float?    @map("distancia_pupilar")
+
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("receitas") // Mapeia o nome da tabela no banco de dados
+
+}
+
+model Agendamento {
+  id                 String    @id @default(uuid())
+  clienteId          String    @map("cliente_id")
+  dataAgendamento    DateTime  @map("data_agendamento") @db.Date
+  horaAgendamento    String    @map("hora_agendamento")
+  tipoAgendamento    String    @map("tipo_agendamento")
+  observacoes        String?   @db.Text // Observações adicionais
+  status             String    @default("Pendente") // Status do agendamento (ex: "Pendente", "Confirmado", "Realizado", "Cancelado")
+
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  // Define a relação entre Agendamento e Cliente
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("agendamentos") // Mapeia o nome da tabela no banco de dados
+}
+
+model Produto {
+  id                 String    @id @default(uuid())
+  nome               String
+  tipo               String    // Ex: "Armação", "Lente de Grau", "Lente de Contato", "Acessório"
+  marca              String?
+  modelo             String?
+  quantidadeEmEstoque Int      @map("quantidade_em_estoque") @default(0) // Quantidade atual em estoque
+  precoCusto         Float?    @map("preco_custo") // Preço de compra do produto
+  precoVenda         Float?    @map("preco_venda") // Preço de venda ao cliente
+  fornecedor         String?   // Nome do fornecedor
+  descricao          String?   @db.Text // Descrição detalhada do produto
+  sku                String?   @unique // Código de identificação único do produto (Stock Keeping Unit)
+
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@map("produtos") // Mapeia o nome da tabela no banco de dados
 }

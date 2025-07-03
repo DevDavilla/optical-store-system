@@ -15,6 +15,14 @@ export async function GET(
 
     const cliente = await prisma.cliente.findUnique({
       where: { id },
+      include: {
+        // --- NOVIDADE AQUI: Inclui as receitas associadas ao cliente ---
+        receitas: {
+          orderBy: {
+            dataReceita: "desc",
+          },
+        },
+      },
     });
 
     if (!cliente) {
