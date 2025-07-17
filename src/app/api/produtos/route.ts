@@ -26,7 +26,6 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // Validação básica: nome e tipo são obrigatórios
     if (!body.nome || !body.tipo) {
       return NextResponse.json(
         { message: "Nome e Tipo do produto são obrigatórios." },
@@ -34,7 +33,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Garante que campos numéricos são tratados corretamente
     const quantidadeEmEstoque =
       typeof body.quantidadeEmEstoque === "number"
         ? body.quantidadeEmEstoque
@@ -43,27 +41,76 @@ export async function POST(request: Request) {
       typeof body.precoCusto === "number" ? body.precoCusto : null;
     const precoVenda =
       typeof body.precoVenda === "number" ? body.precoVenda : null;
+    const tratamentosLenteGrau = Array.isArray(body.tratamentosLenteGrau)
+      ? body.tratamentosLenteGrau
+      : [];
+
+    const grauEsfericoOD =
+      typeof body.grauEsfericoOD === "number" ? body.grauEsfericoOD : null;
+    const grauCilindricoOD =
+      typeof body.grauCilindricoOD === "number" ? body.grauCilindricoOD : null;
+    const grauEixoOD =
+      typeof body.grauEixoOD === "number" ? body.grauEixoOD : null;
+    const grauAdicaoOD =
+      typeof body.grauAdicaoOD === "number" ? body.grauAdicaoOD : null;
+
+    const grauEsfericoOE =
+      typeof body.grauEsfericoOE === "number" ? body.grauEsfericoOE : null;
+    const grauCilindricoOE =
+      typeof body.grauCilindricoOE === "number" ? body.grauCilindricoOE : null;
+    const grauEixoOE =
+      typeof body.grauEixoOE === "number" ? body.grauEixoOE : null;
+    const grauAdicaoOE =
+      typeof body.grauAdicaoOE === "number" ? body.grauAdicaoOE : null;
+
+    const diametroLenteContato =
+      typeof body.diametroLenteContato === "number"
+        ? body.diametroLenteContato
+        : null;
+    const poderLenteContato =
+      typeof body.poderLenteContato === "number"
+        ? body.poderLenteContato
+        : null;
 
     const novoProduto = await prisma.produto.create({
       data: {
         nome: body.nome,
         tipo: body.tipo,
-        marca: body.marca,
-        modelo: body.modelo,
-        quantidadeEmEstoque: quantidadeEmEstoque,
-        precoCusto: precoCusto,
-        precoVenda: precoVenda,
-        fornecedor: body.fornecedor,
-        descricao: body.descricao,
-        sku: body.sku,
+        marca: body.marca || undefined,
+        modelo: body.modelo || undefined,
+        quantidadeEmEstoque,
+        precoCusto,
+        precoVenda,
+        fornecedor: body.fornecedor || undefined,
+        descricao: body.descricao || undefined,
+        sku: body.sku || undefined,
+
+        tipoLenteGrau: body.tipoLenteGrau || undefined,
+        materialLenteGrau: body.materialLenteGrau || undefined,
+        tratamentosLenteGrau:
+          tratamentosLenteGrau.length > 0 ? tratamentosLenteGrau : undefined,
+        grauEsfericoOD,
+        grauCilindricoOD,
+        grauEixoOD,
+        grauAdicaoOD,
+        grauEsfericoOE,
+        grauCilindricoOE,
+        grauEixoOE,
+        grauAdicaoOE,
+        fabricanteLaboratorio: body.fabricanteLaboratorio || undefined,
+
+        curvaBaseLenteContato: body.curvaBaseLenteContato || undefined,
+        diametroLenteContato,
+        poderLenteContato,
+        tipoDescarteLenteContato: body.tipoDescarteLenteContato || undefined,
+        solucoesLenteContato: body.solucoesLenteContato || undefined,
       },
     });
 
-    return NextResponse.json(novoProduto, { status: 201 }); // 201 Created
+    return NextResponse.json(novoProduto, { status: 201 });
   } catch (error: any) {
     console.error("Erro ao criar produto:", error);
     if (error.code === "P2002") {
-      // Se o SKU for duplicado
       return NextResponse.json(
         { message: "SKU já cadastrado." },
         { status: 409 }

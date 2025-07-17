@@ -1,7 +1,7 @@
 // src/app/api/receitas/[id]/route.ts
 
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma"; // Importa a instância global do PrismaClient
+import prisma from "@/lib/prisma";
 
 // Função para obter uma receita específica por ID (GET /api/receitas/[id])
 export async function GET(
@@ -9,13 +9,12 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params; // Pega o ID da URL dinâmica
+    const { id } = params;
 
     const receita = await prisma.receita.findUnique({
       where: { id },
       include: {
         cliente: {
-          // Inclui os dados do cliente relacionado
           select: {
             id: true,
             nome: true,
@@ -47,10 +46,9 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id = "" } = params;
     const body = await request.json();
 
-    // Crie um novo objeto contendo apenas os campos válidos para atualização.
     const dataToUpdate: { [key: string]: any } = {};
 
     if (body.dataReceita !== undefined) {
@@ -70,23 +68,42 @@ export async function PATCH(
     if (body.observacoes !== undefined)
       dataToUpdate.observacoes = body.observacoes;
     if (body.odEsferico !== undefined)
-      dataToUpdate.odEsferico = parseFloat(body.odEsferico);
+      dataToUpdate.odEsferico =
+        typeof body.odEsferico === "number" ? body.odEsferico : null;
     if (body.odCilindrico !== undefined)
-      dataToUpdate.odCilindrico = parseFloat(body.odCilindrico);
+      dataToUpdate.odCilindrico =
+        typeof body.odCilindrico === "number" ? body.odCilindrico : null;
     if (body.odEixo !== undefined)
-      dataToUpdate.odEixo = parseInt(body.odEixo, 10);
+      dataToUpdate.odEixo =
+        typeof body.odEixo === "number" ? body.odEixo : null;
     if (body.odAdicao !== undefined)
-      dataToUpdate.odAdicao = parseFloat(body.odAdicao);
+      dataToUpdate.odAdicao =
+        typeof body.odAdicao === "number" ? body.odAdicao : null;
     if (body.oeEsferico !== undefined)
-      dataToUpdate.oeEsferico = parseFloat(body.oeEsferico);
+      dataToUpdate.oeEsferico =
+        typeof body.oeEsferico === "number" ? body.oeEsferico : null;
     if (body.oeCilindrico !== undefined)
-      dataToUpdate.oeCilindrico = parseFloat(body.oeCilindrico);
+      dataToUpdate.oeCilindrico =
+        typeof body.oeCilindrico === "number" ? body.oeCilindrico : null;
     if (body.oeEixo !== undefined)
-      dataToUpdate.oeEixo = parseInt(body.oeEixo, 10);
+      dataToUpdate.oeEixo =
+        typeof body.oeEixo === "number" ? body.oeEixo : null;
     if (body.oeAdicao !== undefined)
-      dataToUpdate.oeAdicao = parseFloat(body.oeAdicao);
+      dataToUpdate.oeAdicao =
+        typeof body.oeAdicao === "number" ? body.oeAdicao : null;
     if (body.distanciaPupilar !== undefined)
-      dataToUpdate.distanciaPupilar = parseFloat(body.distanciaPupilar);
+      dataToUpdate.distanciaPupilar =
+        typeof body.distanciaPupilar === "number"
+          ? body.distanciaPupilar
+          : null;
+    if (body.distanciaNauseaPupilar !== undefined)
+      dataToUpdate.distanciaNauseaPupilar =
+        typeof body.distanciaNauseaPupilar === "number"
+          ? body.distanciaNauseaPupilar
+          : null;
+    if (body.alturaLente !== undefined)
+      dataToUpdate.alturaLente =
+        typeof body.alturaLente === "number" ? body.alturaLente : null; // <-- NOVIDADE AQUI
 
     const receitaAtualizada = await prisma.receita.update({
       where: { id },
@@ -138,7 +155,6 @@ export async function DELETE(
   } catch (error: any) {
     console.error("Erro ao excluir receita:", error);
     if (error.code === "P2025") {
-      // Prisma error code for record not found
       return NextResponse.json(
         { message: "Receita não encontrada para exclusão." },
         { status: 404 }

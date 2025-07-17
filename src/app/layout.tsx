@@ -1,9 +1,10 @@
 // src/app/layout.tsx
 
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google"; // Suas fontes personalizadas
 import "./globals.css";
 import Navbar from "../components/Navbar";
+import { AuthProvider } from "@/context/AuthContext"; // Seu AuthProvider
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,11 +33,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900 min-h-screen pt-16`}
       >
-        <Navbar />
-
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {children}
-        </main>
+        {/* --- CORREÇÃO AQUI: AuthProvider envolve TUDO que precisa de autenticação --- */}
+        <AuthProvider>
+          <Navbar /> {/* Navbar agora está DENTRO do AuthProvider */}
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {children}{" "}
+            {/* children (o conteúdo da página) também está dentro */}
+          </main>
+        </AuthProvider>
       </body>
     </html>
   );

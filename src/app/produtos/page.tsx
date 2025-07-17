@@ -1,16 +1,45 @@
-// src/app/produtos/page.tsx
 "use client";
 
-import { useState, useEffect, useMemo } from "react"; // Importe useMemo
+import { useState, useEffect, useMemo, useCallback } from "react";
 import ProdutoForm from "@/components/ProdutoForm";
 import ProdutoTable from "@/components/ProdutoTable";
 import Notification from "@/components/Notification";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
-// Interfaces (idealmente em um arquivo de tipos global)
+// Definir os Enums como types para uso no frontend
+type TipoProdutoEnum =
+  | "Armacao"
+  | "LenteDeGrau"
+  | "LenteDeContato"
+  | "Acessorio"
+  | "Servico"
+  | "Outro";
+type TipoLenteGrauEnum =
+  | "VisaoSimples"
+  | "Multifocal"
+  | "Bifocal"
+  | "Ocupacional"
+  | "Progressiva"
+  | "Outro";
+type MaterialLenteGrauEnum =
+  | "Resina"
+  | "Policarbonato"
+  | "Cristal"
+  | "Trivex"
+  | "Outro";
+type TipoDescarteLenteContatoEnum =
+  | "Diario"
+  | "Quinzenal"
+  | "Mensal"
+  | "Trimestral"
+  | "Anual"
+  | "Outro";
+
 interface Produto {
   id: string;
   nome: string;
-  tipo: string;
+  tipo: TipoProdutoEnum;
   marca?: string;
   modelo?: string;
   quantidadeEmEstoque: number;
@@ -19,11 +48,69 @@ interface Produto {
   fornecedor?: string;
   descricao?: string;
   sku?: string;
+
+  tipoLenteGrau?: TipoLenteGrauEnum;
+  materialLenteGrau?: MaterialLenteGrauEnum;
+  tratamentosLenteGrau?: string[];
+  grauEsfericoOD?: number;
+  grauCilindricoOD?: number;
+  grauEixoOD?: number;
+  grauAdicaoOD?: number;
+  grauEsfericoOE?: number;
+  grauCilindricoOE?: number;
+  grauEixoOE?: number;
+  grauAdicaoOE?: number;
+  fabricanteLaboratorio?: string;
+
+  curvaBaseLenteContato?: string;
+  diametroLenteContato?: number;
+  poderLenteContato?: number;
+  tipoDescarteLenteContato?: TipoDescarteLenteContatoEnum;
+  solucoesLenteContato?: string;
+
   createdAt: string;
   updatedAt: string;
 }
 
+// Componente de Modal de Confirmação
+interface ConfirmationModalProps {
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
+  message,
+  onConfirm,
+  onCancel,
+}) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 font-sans">
+      <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+        <p className="text-lg font-semibold mb-4 text-gray-800">{message}</p>
+        <div className="flex justify-end space-x-3">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors duration-200"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200"
+          >
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function ProdutosPage() {
+  const { currentUser, loadingAuth, userRole } = useAuth();
+  const router = useRouter();
+
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,10 +127,16 @@ export default function ProdutosPage() {
     type: "success" | "error";
   } | null>(null);
 
-  // --- NOVIDADE AQUI: Estado para o termo de pesquisa ---
   const [searchTerm, setSearchTerm] = useState("");
 
-  async function fetchProdutos() {
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [produtoToDelete, setProdutoToDelete] = useState<{
+    id: string;
+    nome: string;
+  } | null>(null);
+
+  // Função para buscar todos os produtos
+  const fetchProdutos = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -61,11 +154,29 @@ export default function ProdutosPage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  useEffect(() => {
-    fetchProdutos();
   }, []);
+
+  // --- LÓGICA DE PROTEÇÃO DE ROTA POR PAPEL ---
+  useEffect(() => {
+    if (!loadingAuth) {
+      // Só executa depois que o Firebase terminar de verificar o status de autenticação
+      if (!currentUser) {
+        // Se NÃO houver usuário logado, redireciona para a página de login
+        router.push("/login");
+      } else if (userRole && userRole !== "admin") {
+        // Se houver usuário logado, mas o papel NÃO for 'admin', redireciona para a página inicial
+        setNotification({
+          message:
+            "Acesso negado. Apenas administradores podem gerenciar produtos.",
+          type: "error",
+        });
+        router.push("/");
+      } else {
+        // Se for admin logado, então pode buscar os dados da página
+        fetchProdutos();
+      }
+    }
+  }, [currentUser, loadingAuth, userRole, router, fetchProdutos]);
 
   const handleSubmit = async (data: Partial<Produto>) => {
     setFormError(null);
@@ -96,8 +207,8 @@ export default function ProdutosPage() {
         );
       }
 
-      await fetchProdutos(); // Recarrega a lista
-      setProdutoToEdit(null); // Resetar formulário e modo de edição
+      await fetchProdutos();
+      setProdutoToEdit(null);
       setEditingProdutoId(null);
       setNotification({
         message: `Produto ${
@@ -117,12 +228,19 @@ export default function ProdutosPage() {
     }
   };
 
-  const handleDelete = async (id: string, nome: string) => {
-    if (!window.confirm(`Tem certeza que deseja excluir o produto ${nome}?`)) {
-      return;
-    }
+  const handleDeleteClick = (id: string, nome: string) => {
+    setProdutoToDelete({ id, nome });
+    setShowConfirmModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!produtoToDelete) return;
+
+    setShowConfirmModal(false); // Fecha o modal
     try {
-      const response = await fetch(`/api/produtos/${id}`, { method: "DELETE" });
+      const response = await fetch(`/api/produtos/${produtoToDelete.id}`, {
+        method: "DELETE",
+      });
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
@@ -130,7 +248,7 @@ export default function ProdutosPage() {
         );
       }
       setNotification({
-        message: `Produto ${nome} excluído com sucesso!`,
+        message: `Produto ${produtoToDelete.nome} excluído com sucesso!`,
         type: "success",
       });
       await fetchProdutos();
@@ -140,7 +258,14 @@ export default function ProdutosPage() {
         message: err.message || "Erro ao excluir produto.",
         type: "error",
       });
+    } finally {
+      setProdutoToDelete(null); // Limpa o produto a ser excluído
     }
+  };
+
+  const cancelDelete = () => {
+    setShowConfirmModal(false);
+    setProdutoToDelete(null);
   };
 
   const handleEdit = (produto: Produto) => {
@@ -154,7 +279,6 @@ export default function ProdutosPage() {
     setFormError(null);
   };
 
-  // --- NOVIDADE AQUI: Lógica de filtragem dos produtos ---
   const filteredProdutos = useMemo(() => {
     if (!searchTerm) {
       return produtos;
@@ -178,9 +302,28 @@ export default function ProdutosPage() {
     );
   }, [produtos, searchTerm]);
 
+  // --- Renderização Condicional com base no status de autenticação e papel ---
+  if (loadingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 pt-16 font-sans">
+        <h1 className="text-4xl font-bold text-center mb-8">
+          Carregando Autenticação...
+        </h1>
+        <p>Verificando seu status de login e permissões.</p>
+      </div>
+    );
+  }
+
+  // Se não estiver logado OU o papel NÃO for 'admin', o useEffect já redirecionou.
+  // Retornamos null para evitar renderizar o conteúdo da página por um instante.
+  if (!currentUser || userRole !== "admin") {
+    return null;
+  }
+
+  // Exibir tela de carregamento de dados após autenticação e permissão
   if (loading) {
     return (
-      <div className="container mx-auto p-8 text-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 pt-16 font-sans">
         <h1 className="text-4xl font-bold text-center mb-8">
           Controle de Estoque
         </h1>
@@ -191,7 +334,7 @@ export default function ProdutosPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto p-8 text-center text-red-600">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 pt-16 text-red-600 font-sans">
         <h1 className="text-4xl font-bold text-center mb-8">
           Controle de Estoque
         </h1>
@@ -200,9 +343,10 @@ export default function ProdutosPage() {
     );
   }
 
+  // Renderiza o conteúdo da página apenas se o usuário for um admin logado e os dados carregados
   return (
-    <div className="container mx-auto p-8">
-      <h1 className="text-4xl font-bold text-center mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-8 pt-16 font-sans">
+      <h1 className="text-4xl mb-8 md:text-5xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 drop-shadow-lg">
         Controle de Estoque
       </h1>
 
@@ -214,21 +358,22 @@ export default function ProdutosPage() {
         formError={formError}
       />
 
-      {/* --- NOVIDADE AQUI: Campo de pesquisa --- */}
-      <div className="mb-4">
+      <div className="mb-8 p-4 bg-white rounded-xl shadow-md border border-gray-200">
+        {" "}
+        {/* Estilizado o container da busca */}
         <input
           type="text"
           placeholder="Pesquisar produtos por nome, tipo, marca, SKU ou fornecedor..."
-          className="w-full p-2 border border-gray-300 rounded-md shadow-sm"
+          className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-700" // Estilizado o input de busca
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
       <ProdutoTable
-        produtos={filteredProdutos} // Passa a lista FILTRADA
+        produtos={filteredProdutos}
         onEdit={handleEdit}
-        onDelete={handleDelete}
+        onDelete={handleDeleteClick} // Alterado para usar o novo handler
       />
 
       {notification && (
@@ -236,6 +381,14 @@ export default function ProdutosPage() {
           message={notification.message}
           type={notification.type}
           onClose={() => setNotification(null)}
+        />
+      )}
+
+      {showConfirmModal && produtoToDelete && (
+        <ConfirmationModal
+          message={`Tem certeza que deseja excluir o produto "${produtoToDelete.nome}"? Esta ação é irreversível.`}
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
         />
       )}
     </div>

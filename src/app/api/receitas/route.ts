@@ -1,7 +1,7 @@
 // src/app/api/receitas/route.ts
 
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma"; // Importa a instância global do PrismaClient
+import prisma from "@/lib/prisma";
 
 // Função para LISTAR TODAS as receitas (GET /api/receitas)
 export async function GET() {
@@ -9,12 +9,14 @@ export async function GET() {
     const receitas = await prisma.receita.findMany({
       include: {
         cliente: {
-          // Inclui os dados do cliente relacionado
           select: {
             id: true,
             nome: true,
           },
         },
+      },
+      orderBy: {
+        dataReceita: "desc",
       },
     });
     return NextResponse.json(receitas, { status: 200 });
@@ -32,7 +34,6 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // Validação básica: clienteId e dataReceita são essenciais
     if (!body.clienteId || !body.dataReceita) {
       return NextResponse.json(
         { message: "ID do cliente e data da receita são obrigatórios." },
@@ -40,40 +41,53 @@ export async function POST(request: Request) {
       );
     }
 
-    // Garante que a data está no formato Date para o Prisma
     const dataReceitaParsed = new Date(body.dataReceita);
     if (isNaN(dataReceitaParsed.getTime())) {
-      // Verifica se a data é válida
       return NextResponse.json(
         { message: "Formato de data de receita inválido." },
         { status: 400 }
       );
     }
 
+    // Tratamento para campos numéricos
+    const distanciaPupilar =
+      typeof body.distanciaPupilar === "number" ? body.distanciaPupilar : null;
+    const distanciaNauseaPupilar =
+      typeof body.distanciaNauseaPupilar === "number"
+        ? body.distanciaNauseaPupilar
+        : null;
+    const alturaLente =
+      typeof body.alturaLente === "number" ? body.alturaLente : null; // <-- NOVIDADE AQUI
+
     const novaReceita = await prisma.receita.create({
       data: {
         cliente: {
-          connect: { id: body.clienteId }, // Conecta a receita a um cliente existente
+          connect: { id: body.clienteId },
         },
         dataReceita: dataReceitaParsed,
         observacoes: body.observacoes,
-        odEsferico: body.odEsferico,
-        odCilindrico: body.odCilindrico,
-        odEixo: body.odEixo,
-        odAdicao: body.odAdicao,
-        oeEsferico: body.oeEsferico,
-        oeCilindrico: body.oeCilindrico,
-        oeEixo: body.oeEixo,
-        oeAdicao: body.oeAdicao,
-        distanciaPupilar: body.distanciaPupilar,
+        odEsferico:
+          typeof body.odEsferico === "number" ? body.odEsferico : null,
+        odCilindrico:
+          typeof body.odCilindrico === "number" ? body.odCilindrico : null,
+        odEixo: typeof body.odEixo === "number" ? body.odEixo : null,
+        odAdicao: typeof body.odAdicao === "number" ? body.odAdicao : null,
+        oeEsferico:
+          typeof body.oeEsferico === "number" ? body.oeEsferico : null,
+        oeCilindrico:
+          typeof body.oeCilindrico === "number" ? body.oeCilindrico : null,
+        oeEixo: typeof body.oeEixo === "number" ? body.oeEixo : null,
+        oeAdicao: typeof body.oeAdicao === "number" ? body.oeAdicao : null,
+        distanciaPupilar: distanciaPupilar,
+        distanciaNauseaPupilar: distanciaNauseaPupilar,
+        alturaLente: alturaLente, // <-- NOVIDADE AQUI
       },
     });
 
-    return NextResponse.json(novaReceita, { status: 201 }); // 201 Created
+    return NextResponse.json(novaReceita, { status: 201 });
   } catch (error: any) {
     console.error("Erro ao criar receita:", error);
     if (error.code === "P2025") {
-      // Por exemplo, se o clienteId não existir
       return NextResponse.json(
         { message: "Cliente associado não encontrado." },
         { status: 404 }

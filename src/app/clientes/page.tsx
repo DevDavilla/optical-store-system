@@ -1,11 +1,11 @@
-// src/app/clientes/page.tsx
-
 "use client";
 
-import { useState, useEffect, useMemo } from "react"; // Importe useMemo
-import ClientForm from "@/components/ClientForm";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import ClientTable from "@/components/ClientTable";
 import Notification from "@/components/Notification";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 interface Cliente {
   id: string;
@@ -25,33 +25,31 @@ interface Cliente {
 }
 
 export default function ClientesPage() {
+  const { currentUser, loadingAuth, userRole } = useAuth();
+  const router = useRouter();
+
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const [clientToEdit, setClientToEdit] = useState<Partial<Cliente> | null>(
     null
   );
-
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error";
   } | null>(null);
-
-  // --- NOVIDADE AQUI: Estado para o termo de pesquisa ---
   const [searchTerm, setSearchTerm] = useState("");
 
-  async function fetchClientes() {
+  const fetchClientes = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await fetch("/api/clientes");
-      if (!response.ok) {
+      if (!response.ok)
         throw new Error(`Erro HTTP! Status: ${response.status}`);
-      }
       const data: Cliente[] = await response.json();
       setClientes(data);
     } catch (err) {
@@ -62,11 +60,17 @@ export default function ClientesPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    fetchClientes();
-  }, []);
+    if (!loadingAuth) {
+      if (!currentUser) {
+        router.push("/login");
+      } else {
+        fetchClientes();
+      }
+    }
+  }, [currentUser, loadingAuth, router, fetchClientes]);
 
   const handleSubmit = async (data: Partial<Cliente>) => {
     setFormError(null);
@@ -85,10 +89,8 @@ export default function ClientesPage() {
         : "/api/clientes";
 
       const response = await fetch(url, {
-        method: method,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        method,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
 
@@ -121,15 +123,11 @@ export default function ClientesPage() {
   };
 
   const handleDelete = async (id: string, nome: string) => {
-    if (!window.confirm(`Tem certeza que deseja excluir o cliente ${nome}?`)) {
+    if (!window.confirm(`Tem certeza que deseja excluir o cliente ${nome}?`))
       return;
-    }
 
     try {
-      const response = await fetch(`/api/clientes/${id}`, {
-        method: "DELETE",
-      });
-
+      const response = await fetch(`/api/clientes/${id}`, { method: "DELETE" });
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
@@ -156,10 +154,7 @@ export default function ClientesPage() {
     const formattedDate = cliente.dataNascimento
       ? new Date(cliente.dataNascimento).toISOString().split("T")[0]
       : "";
-    setClientToEdit({
-      ...cliente,
-      dataNascimento: formattedDate,
-    });
+    setClientToEdit({ ...cliente, dataNascimento: formattedDate });
   };
 
   const handleCancelEdit = () => {
@@ -168,30 +163,33 @@ export default function ClientesPage() {
     setFormError(null);
   };
 
-  // --- NOVIDADE AQUI: Lógica de filtragem dos clientes ---
   const filteredClientes = useMemo(() => {
-    if (!searchTerm) {
-      return clientes; // Retorna todos os clientes se não houver termo de pesquisa
-    }
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    if (!searchTerm) return clientes;
+    const lower = searchTerm.toLowerCase();
     return clientes.filter(
-      (cliente) =>
-        cliente.nome.toLowerCase().includes(lowerCaseSearchTerm) ||
-        (cliente.email &&
-          cliente.email.toLowerCase().includes(lowerCaseSearchTerm)) ||
-        (cliente.cpf &&
-          cliente.cpf.toLowerCase().includes(lowerCaseSearchTerm)) ||
-        (cliente.telefone &&
-          cliente.telefone.toLowerCase().includes(lowerCaseSearchTerm))
+      (c) =>
+        c.nome.toLowerCase().includes(lower) ||
+        c.email?.toLowerCase().includes(lower) ||
+        c.cpf?.toLowerCase().includes(lower) ||
+        c.telefone?.toLowerCase().includes(lower)
     );
-  }, [clientes, searchTerm]); // Recalcula apenas quando 'clientes' ou 'searchTerm' mudam
+  }, [clientes, searchTerm]);
+
+  if (loadingAuth) {
+    return (
+      <div className="container mx-auto p-8 text-center pt-16">
+        <h1 className="text-4xl font-bold mb-8">Carregando Autenticação...</h1>
+        <p>Verificando seu status de login.</p>
+      </div>
+    );
+  }
+
+  if (!currentUser) return null;
 
   if (loading) {
     return (
-      <div className="container mx-auto p-8 text-center">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Gestão de Clientes
-        </h1>
+      <div className="container mx-auto p-8 text-center pt-16">
+        <h1 className="text-4xl font-bold mb-8">Gestão de Clientes</h1>
         <p>Carregando clientes...</p>
       </div>
     );
@@ -199,45 +197,47 @@ export default function ClientesPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto p-8 text-center text-red-600">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Gestão de Clientes
-        </h1>
+      <div className="container mx-auto p-8 text-center text-red-600 pt-16">
+        <h1 className="text-4xl font-bold mb-8">Gestão de Clientes</h1>
         <p>{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-8">
-      <h1 className="text-4xl font-bold text-center mb-8">
-        Gestão de Clientes
-      </h1>
+    <div className="relative min-h-screen bg-gradient-to-br from-indigo-100 via-white to-blue-100 px-4 sm:px-8 pt-24 pb-12">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 drop-shadow-lg mb-8">
+          Gestão de Clientes
+        </h1>
 
-      <ClientForm
-        onSubmit={handleSubmit}
-        initialData={clientToEdit}
-        onCancelEdit={handleCancelEdit}
-        isSubmitting={isSubmitting}
-        formError={formError}
-      />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="bg-white/70 backdrop-blur-md rounded-xl p-6 shadow-xl"
+        >
+          <div className="my-6">
+            <input
+              type="text"
+              placeholder="Pesquisar clientes por nome, email, CPF ou telefone..."
+              className="w-full p-3 border border-gray-300 rounded-md shadow-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
 
-      {/* --- NOVIDADE AQUI: Campo de pesquisa --- */}
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Pesquisar clientes por nome, email, CPF ou telefone..."
-          className="w-full p-2 border border-gray-300 rounded-md shadow-sm"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      <ClientTable
-        clientes={filteredClientes} // Passa a lista FILTRADA para a tabela
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
+          <ClientTable
+            clientes={filteredClientes}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        </motion.div>
+      </motion.div>
 
       {notification && (
         <Notification

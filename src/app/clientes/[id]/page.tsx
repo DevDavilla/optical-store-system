@@ -3,8 +3,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation"; // Importa useParams para pegar o ID da URL
-import Link from "next/link"; // Importa Link para o botão de voltar
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/context/AuthContext"; // <-- Importe o useAuth
+import { useRouter } from "next/navigation"; // <-- Importe o useRouter
 
 // Interface Receita (mantida aqui ou em um arquivo global de tipos)
 interface Receita {
@@ -19,7 +21,8 @@ interface Receita {
   oeEixo?: number;
   oeAdicao?: number;
   distanciaPupilar?: number;
-  observacoes?: string;
+  distanciaNauseaPupilar?: number;
+  alturaLente?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -44,40 +47,77 @@ interface Cliente {
 }
 
 export default function ClienteDetailPage() {
-  const { id } = useParams<{ id: string }>(); // Pega o ID do cliente da URL
+  const { currentUser, loadingAuth, userRole } = useAuth(); // <-- Use o useAuth
+  const router = useRouter(); // <-- Use o useRouter
+
+  const { id } = useParams<{ id: string }>();
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // --- NOVIDADE AQUI: Proteção de rota e carregamento de dados ---
   useEffect(() => {
-    if (!id) {
-      setLoading(false);
-      setError("ID do cliente não fornecido.");
-      return;
-    }
-
-    async function fetchCliente() {
-      try {
-        const response = await fetch(`/api/clientes/${id}`); // Busca cliente pela API dinâmica
-        if (!response.ok) {
-          throw new Error(`Erro HTTP! Status: ${response.status}`);
+    if (!loadingAuth) {
+      // Quando o status de autenticação termina de carregar
+      if (!currentUser) {
+        router.push("/login"); // Redireciona para login se não estiver autenticado
+      } else {
+        // Se estiver autenticado, busca os dados da página
+        if (id) {
+          // Garante que o ID existe antes de tentar buscar
+          fetchCliente();
+        } else {
+          setLoading(false);
+          setError("ID do cliente não fornecido.");
         }
-        const data: Cliente = await response.json();
-        setCliente(data);
-      } catch (err) {
-        console.error("Falha ao buscar detalhes do cliente:", err);
-        setError("Não foi possível carregar os detalhes do cliente.");
-      } finally {
-        setLoading(false);
       }
     }
+  }, [currentUser, loadingAuth, router, id]); // Dependências
 
-    fetchCliente();
-  }, [id]); // O useEffect roda novamente se o ID na URL mudar
+  async function fetchCliente() {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/clientes/${id}`);
+      if (!response.ok) {
+        throw new Error(`Erro HTTP! Status: ${response.status}`);
+      }
+      const data: Cliente = await response.json();
+      setCliente(data);
+    } catch (err) {
+      console.error("Falha ao buscar detalhes do cliente:", err);
+      setError("Não foi possível carregar os detalhes do cliente.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
+  // Converte a data de nascimento para um formato legível
+  const formattedDataNascimento = cliente?.dataNascimento
+    ? new Date(cliente.dataNascimento).toLocaleDateString("pt-BR")
+    : "Não informado";
+
+  // --- NOVIDADE AQUI: Exibir tela de carregamento de autenticação ---
+  if (loadingAuth) {
+    return (
+      <div className="container mx-auto p-8 text-center pt-16">
+        <h1 className="text-4xl font-bold text-center mb-8">
+          Carregando Autenticação...
+        </h1>
+        <p>Verificando seu status de login.</p>
+      </div>
+    );
+  }
+
+  // --- NOVIDADE AQUI: Exibir tela de acesso negado se não logado ---
+  if (!currentUser) {
+    return null; // O useEffect já redirecionou, então não renderiza nada aqui
+  }
+
+  // --- NOVIDADE AQUI: Exibir tela de carregamento de dados após autenticação ---
   if (loading) {
     return (
-      <div className="container mx-auto p-8 text-center">
+      <div className="container mx-auto p-8 text-center pt-16">
         <h1 className="text-4xl font-bold text-center mb-8">
           Detalhes do Cliente
         </h1>
@@ -88,7 +128,7 @@ export default function ClienteDetailPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto p-8 text-center text-red-600">
+      <div className="container mx-auto p-8 text-center text-red-600 pt-16">
         <h1 className="text-4xl font-bold text-center mb-8">
           Detalhes do Cliente
         </h1>
@@ -99,7 +139,7 @@ export default function ClienteDetailPage() {
 
   if (!cliente) {
     return (
-      <div className="container mx-auto p-8 text-center">
+      <div className="container mx-auto p-8 text-center pt-16">
         <h1 className="text-4xl font-bold text-center mb-8">
           Detalhes do Cliente
         </h1>
@@ -108,13 +148,8 @@ export default function ClienteDetailPage() {
     );
   }
 
-  // Converte a data de nascimento para um formato legível
-  const formattedDataNascimento = cliente.dataNascimento
-    ? new Date(cliente.dataNascimento).toLocaleDateString("pt-BR")
-    : "Não informado";
-
   return (
-    <div className="container mx-auto p-8">
+    <div className="container mx-auto p-8 pt-16">
       <div className="bg-white p-8 rounded-lg shadow-md">
         <h1 className="text-4xl font-bold text-center mb-6 text-gray-800">
           Detalhes de {cliente.nome}
@@ -199,18 +234,18 @@ export default function ClienteDetailPage() {
                 <tbody>
                   {cliente.receitas.map((receita) => (
                     <tr key={receita.id} className="border-b hover:bg-gray-50">
-                      <td className="py-4 px-4 text-gray-800">
+                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
                         {new Date(receita.dataReceita).toLocaleDateString(
                           "pt-BR"
                         )}
                       </td>
-                      <td className="py-4 px-4 text-gray-800">
+                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
                         {receita.odEsferico ?? "N/A"}
                       </td>
-                      <td className="py-4 px-4 text-gray-800">
+                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
                         {receita.oeEsferico ?? "N/A"}
                       </td>
-                      <td className="py-4 px-4">
+                      <td className="px-4 py-4 whitespace-nowrap">
                         <Link href={`/receitas/${receita.id}`}>
                           <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs">
                             Ver Detalhes

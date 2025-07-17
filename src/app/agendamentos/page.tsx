@@ -1,10 +1,12 @@
 // src/app/agendamentos/page.tsx
 "use client";
 
-import { useState, useEffect, useMemo } from "react"; // Importe useMemo
+import { useState, useEffect, useMemo, useCallback } from "react";
 import AgendamentoForm from "@/components/AgendamentoForm";
 import AgendamentoTable from "@/components/AgendamentoTable";
 import Notification from "@/components/Notification";
+import { useAuth } from "@/context/AuthContext"; // Importe o useAuth
+import { useRouter } from "next/navigation"; // Importe o useRouter
 
 // Interfaces (idealmente em um arquivo de tipos global)
 interface ClienteSimples {
@@ -17,9 +19,9 @@ interface ClienteSimples {
 interface Agendamento {
   id: string;
   clienteId: string;
-  cliente?: ClienteSimples; // Pode ser incluído na busca
-  dataAgendamento: string; // Formato YYYY-MM-DD
-  horaAgendamento: string; // Formato HH:MM
+  cliente?: ClienteSimples;
+  dataAgendamento: string;
+  horaAgendamento: string;
   tipoAgendamento: string;
   observacoes?: string;
   status: string;
@@ -28,9 +30,12 @@ interface Agendamento {
 }
 
 export default function AgendamentosPage() {
+  const { currentUser, loadingAuth, userRole } = useAuth(); // Obtém o usuário, status de carregamento e papel
+  const router = useRouter(); // Hook para redirecionamento
+
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [clientes, setClientes] = useState<ClienteSimples[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Estado de carregamento dos dados da página
   const [error, setError] = useState<string | null>(null);
 
   const [formError, setFormError] = useState<string | null>(null);
@@ -46,10 +51,10 @@ export default function AgendamentosPage() {
     type: "success" | "error";
   } | null>(null);
 
-  // --- NOVIDADE AQUI: Estado para o termo de pesquisa ---
   const [searchTerm, setSearchTerm] = useState("");
 
-  async function fetchAgendamentos() {
+  // Função para buscar todos os agendamentos (envolvida em useCallback para otimização)
+  const fetchAgendamentos = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -67,9 +72,10 @@ export default function AgendamentosPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []); // Dependências vazias, pois setAgendamentos é estável
 
-  async function fetchClientesSimples() {
+  // Função para buscar a lista de clientes (para o select do formulário) (envolvida em useCallback para otimização)
+  const fetchClientesSimples = useCallback(async () => {
     try {
       const response = await fetch("/api/clientes");
       if (!response.ok) {
@@ -80,12 +86,28 @@ export default function AgendamentosPage() {
     } catch (err) {
       console.error("Falha ao buscar clientes para o select:", err);
     }
-  }
+  }, []); // Dependências vazias, pois setClientes é estável
 
+  // --- LÓGICA DE PROTEÇÃO DE ROTA E CARREGAMENTO DE DADOS ---
   useEffect(() => {
-    fetchAgendamentos();
-    fetchClientesSimples();
-  }, []);
+    if (!loadingAuth) {
+      // Só executa depois que o Firebase terminar de verificar o status de autenticação
+      if (!currentUser) {
+        // Se NÃO houver usuário logado, redireciona para a página de login
+        router.push("/login");
+      } else {
+        // Se houver usuário logado, então pode buscar os dados da página
+        fetchAgendamentos();
+        fetchClientesSimples();
+      }
+    }
+  }, [
+    currentUser,
+    loadingAuth,
+    router,
+    fetchAgendamentos,
+    fetchClientesSimples,
+  ]); // Dependências: reage a mudanças no usuário logado ou no status de carregamento da autenticação
 
   const handleSubmit = async (data: Partial<Agendamento>) => {
     setFormError(null);
@@ -118,9 +140,7 @@ export default function AgendamentosPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(
-          errorData.message || `Erro HTTP! Status: ${response.status}`
-        );
+        throw new Error(`Erro HTTP! Status: ${response.status}`);
       }
 
       await fetchAgendamentos();
@@ -156,9 +176,7 @@ export default function AgendamentosPage() {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(
-          errorData.message || `Erro HTTP! Status: ${response.status}`
-        );
+        throw new Error(`Erro HTTP! Status: ${response.status}`);
       }
       setNotification({
         message: `Agendamento excluído com sucesso!`,
@@ -188,7 +206,6 @@ export default function AgendamentosPage() {
     setFormError(null);
   };
 
-  // --- NOVIDADE AQUI: Lógica de filtragem dos agendamentos ---
   const filteredAgendamentos = useMemo(() => {
     if (!searchTerm) {
       return agendamentos;
@@ -199,27 +216,47 @@ export default function AgendamentosPage() {
         (agendamento.cliente?.nome &&
           agendamento.cliente.nome
             .toLowerCase()
-            .includes(lowerCaseSearchTerm)) || // Busca por nome do cliente
+            .includes(lowerCaseSearchTerm)) ||
         (agendamento.dataAgendamento &&
-          agendamento.dataAgendamento.includes(lowerCaseSearchTerm)) || // Busca por data (string)
+          agendamento.dataAgendamento.includes(lowerCaseSearchTerm)) ||
         (agendamento.horaAgendamento &&
-          agendamento.horaAgendamento.includes(lowerCaseSearchTerm)) || // Busca por hora
+          agendamento.horaAgendamento.includes(lowerCaseSearchTerm)) ||
         (agendamento.tipoAgendamento &&
           agendamento.tipoAgendamento
             .toLowerCase()
-            .includes(lowerCaseSearchTerm)) || // Busca por tipo
+            .includes(lowerCaseSearchTerm)) ||
         (agendamento.status &&
-          agendamento.status.toLowerCase().includes(lowerCaseSearchTerm)) || // Busca por status
+          agendamento.status.toLowerCase().includes(lowerCaseSearchTerm)) ||
         (agendamento.observacoes &&
-          agendamento.observacoes.toLowerCase().includes(lowerCaseSearchTerm)) // Busca por observações
+          agendamento.observacoes.toLowerCase().includes(lowerCaseSearchTerm))
     );
   }, [agendamentos, searchTerm]);
 
-  if (loading) {
+  // --- Renderização Condicional com base no status de autenticação e carregamento ---
+  if (loadingAuth) {
+    // Exibe uma tela de carregamento enquanto o Firebase verifica o status de autenticação
     return (
-      <div className="container mx-auto p-8 text-center">
+      <div className="container mx-auto p-8 text-center pt-16">
         <h1 className="text-4xl font-bold text-center mb-8">
-          Gestão de Agendamentos
+          Carregando Autenticação...
+        </h1>
+        <p>Verificando seu status de login.</p>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    // Se NÃO houver usuário logado, o useEffect já redirecionou.
+    // Retornamos null aqui para evitar renderizar o conteúdo da página por um instante.
+    return null;
+  }
+
+  if (loading) {
+    // Exibe uma tela de carregamento enquanto os dados da página estão sendo buscados (após autenticação)
+    return (
+      <div className="container mx-auto p-8 text-center pt-16">
+        <h1 className="text-4xl mb-8 text-gray-800 md:text-5xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 drop-shadow-lg">
+          Gestão de Agendamento
         </h1>
         <p>Carregando agendamentos...</p>
       </div>
@@ -227,9 +264,10 @@ export default function AgendamentosPage() {
   }
 
   if (error) {
+    // Exibe uma mensagem de erro se a busca de dados falhar
     return (
-      <div className="container mx-auto p-8 text-center text-red-600">
-        <h1 className="text-4xl font-bold text-center mb-8">
+      <div className="container mx-auto p-8 text-center text-red-600 pt-16">
+        <h1 className="text-4xl mb-8 text-gray-800 md:text-5xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 drop-shadow-lg">
           Gestão de Agendamentos
         </h1>
         <p>{error}</p>
@@ -237,9 +275,10 @@ export default function AgendamentosPage() {
     );
   }
 
+  // Renderiza o conteúdo da página apenas se o usuário estiver logado e os dados carregados
   return (
-    <div className="container mx-auto p-8">
-      <h1 className="text-4xl font-bold text-center mb-8">
+    <div className="container mx-auto p-8 pt-16">
+      <h1 className="text-4xl mb-15 text-gray-800 md:text-5xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 drop-shadow-lg">
         Gestão de Agendamentos
       </h1>
 
@@ -252,7 +291,6 @@ export default function AgendamentosPage() {
         clientes={clientes}
       />
 
-      {/* --- NOVIDADE AQUI: Campo de pesquisa --- */}
       <div className="mb-4">
         <input
           type="text"
@@ -264,7 +302,7 @@ export default function AgendamentosPage() {
       </div>
 
       <AgendamentoTable
-        agendamentos={filteredAgendamentos} // Passa a lista FILTRADA
+        agendamentos={filteredAgendamentos}
         onEdit={handleEdit}
         onDelete={handleDelete}
       />
