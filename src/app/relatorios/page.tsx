@@ -6,6 +6,7 @@ import Notification from "@/components/Notification";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion"; // Importa motion para animações
 
 // Interfaces para os dados do relatório consolidado
 interface ClienteRelatorio {
@@ -86,6 +87,30 @@ export default function RelatorioGeralPage() {
     type: "success" | "error";
   } | null>(null);
 
+  // Framer Motion variants para animação de entrada da página
+  const pageVariants = {
+    hidden: { opacity: 0, y: 30 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+  };
+
+  // Função auxiliar para obter classes de badge de status
+  const getStatusBadgeClasses = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "pago":
+      case "concluído":
+      case "finalizado":
+        return "bg-green-100 text-green-800";
+      case "pendente":
+      case "agendado":
+        return "bg-yellow-100 text-yellow-800";
+      case "cancelado":
+      case "rejeitado":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   // --- LÓGICA DE PROTEÇÃO DE ROTA POR PAPEL ---
   useEffect(() => {
     if (!loadingAuth) {
@@ -156,29 +181,93 @@ export default function RelatorioGeralPage() {
     }
   };
 
-  // --- Renderização Condicional com base no status de autenticação e papel ---
+  // --- TELAS DE CARREGAMENTO E ERRO PADRONIZADAS (com estilos do ClientesPage) ---
   if (loadingAuth) {
     return (
-      <div className="container mx-auto p-8 text-center pt-16">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Carregando Autenticação...
-        </h1>
-        <p>Verificando seu status de login e permissões.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white/80 backdrop-blur-md rounded-xl p-8 shadow-xl text-center"
+        >
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            Carregando Autenticação...
+          </h1>
+          <p className="text-gray-600">
+            Verificando seu status de login e permissões.
+          </p>
+        </motion.div>
       </div>
     );
   }
 
   if (!currentUser || userRole !== "admin") {
-    return null;
+    return null; // O useEffect já redirecionou ou exibiu notificação
+  }
+
+  // Adicionado tela de carregamento para a busca de dados do relatório
+  if (loading && !reportData) {
+    // Mostra carregamento apenas se não houver dados ainda
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white/80 backdrop-blur-md rounded-xl p-8 shadow-xl text-center"
+        >
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            Gerando Relatório...
+          </h1>
+          <p className="text-gray-600">Buscando e processando dados.</p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (error && !reportData) {
+    // Mostra erro apenas se não houver dados do relatório
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white/80 backdrop-blur-md rounded-xl p-8 shadow-xl text-center"
+        >
+          <h1 className="text-3xl font-bold text-red-600 mb-4">
+            Erro ao Gerar Relatório
+          </h1>
+          <p className="text-gray-600">{error}</p>
+          <button
+            onClick={handleGenerateReport}
+            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-sm"
+          >
+            Tentar Novamente
+          </button>
+        </motion.div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto p-8 pt-16">
+    <motion.div
+      className="container mx-auto p-8 pt-16"
+      initial="hidden"
+      animate="show"
+      variants={pageVariants} // Aplica a animação de entrada
+    >
       <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 drop-shadow-lg mb-8">
-        Relatório Geral de Vendas e Produtos
+        Relatório Geral de Vendas e Agendamentos
       </h1>
 
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="bg-white/70 backdrop-blur-md rounded-xl p-6 shadow-xl mb-8" // Contêiner principal do conteúdo
+      >
         <h2 className="text-2xl font-semibold mb-4 text-gray-800">
           Gerar Relatório por Período
         </h2>
@@ -195,7 +284,7 @@ export default function RelatorioGeralPage() {
               id="startDate"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500" // Ajustado p-3 e focus
             />
           </div>
           <div>
@@ -210,277 +299,337 @@ export default function RelatorioGeralPage() {
               id="endDate"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500" // Ajustado p-3 e focus
             />
           </div>
           <button
             onClick={handleGenerateReport}
             disabled={loading}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white font-semibold py-2 px-5 rounded-full shadow-lg transition-all duration-300 disabled:opacity-50"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-sm disabled:opacity-50"
           >
             {loading ? "Gerando..." : "Gerar Relatório"}
           </button>
         </div>
-        {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
-      </div>
+        {error && !reportData && (
+          <p className="text-red-600 text-sm mt-2">{error}</p>
+        )}
+      </motion.div>
 
       {reportData && (
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="bg-white/70 backdrop-blur-md rounded-xl p-6 shadow-xl mb-8" // Contêiner para os resultados do relatório
+        >
+          <h2 className="text-2xl font-semibold mb-6 text-gray-800">
             Resultados do Relatório
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-lg mb-6 border-b pb-4">
-            <h3 className="md:col-span-2 text-xl font-semibold mb-2 text-gray-700">
+          {/* Resumo de Vendas em Cards */}
+          <div className="mb-8 p-4 bg-gray-50 rounded-lg shadow-inner">
+            <h3 className="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">
               Resumo de Vendas
             </h3>
-            <p>
-              <strong>Total de Vendas no Período:</strong> R${" "}
-              {reportData.totalVendasPeriodo.toFixed(2)}
-            </p>
-            <p>
-              <strong>Total Geral de Itens Vendidos:</strong>{" "}
-              {reportData.totalItensVendidosGeral}
-            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-blue-100 p-4 rounded-lg shadow-sm">
+                <p className="text-sm text-blue-700 font-medium">
+                  Total de Vendas no Período:
+                </p>
+                <p className="text-2xl font-bold text-blue-900 mt-1">
+                  R$ {reportData.totalVendasPeriodo.toFixed(2)}
+                </p>
+              </div>
+              <div className="bg-green-100 p-4 rounded-lg shadow-sm">
+                <p className="text-sm text-green-700 font-medium">
+                  Total Geral de Itens Vendidos:
+                </p>
+                <p className="text-2xl font-bold text-green-900 mt-1">
+                  {reportData.totalItensVendidosGeral}
+                </p>
+              </div>
+            </div>
           </div>
 
-          <h3 className="text-xl font-semibold mb-3 mt-6 text-gray-700">
-            Vendas Detalhadas
-          </h3>
-          {reportData.vendasDetalhadas.length === 0 ? (
-            <p className="text-lg text-gray-600">
-              Nenhuma venda encontrada para o período selecionado.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white border border-gray-200 shadow-md rounded-lg">
-                <thead>
-                  <tr className="bg-gray-100 border-b">
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Data
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Cliente
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Valor
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Itens
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Ações
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportData.vendasDetalhadas.map((venda) => (
-                    <tr key={venda.id} className="border-b hover:bg-gray-50">
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        {new Date(venda.dataVenda).toLocaleDateString("pt-BR")}
-                      </td>
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        {venda.cliente?.nome || "N/A"}
-                      </td>
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        R$ {venda.valorTotal.toFixed(2)}
-                      </td>
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        {venda.statusPagamento}
-                      </td>
-                      <td className="px-4 py-4 text-gray-800 text-sm">
-                        {venda.itens.map((item, idx) => (
-                          <div
-                            key={item.id || idx}
-                            className="whitespace-nowrap"
+          {/* Vendas Detalhadas */}
+          <div className="mb-8 border-t pt-6 mt-6">
+            <h3 className="text-xl font-semibold mb-4 text-gray-700">
+              Vendas Detalhadas
+            </h3>
+            {reportData.vendasDetalhadas.length === 0 ? (
+              <p className="text-lg text-gray-600">
+                Nenhuma venda encontrada para o período selecionado.
+              </p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg shadow-md">
+                <table className="min-w-full bg-white border border-gray-200">
+                  <thead>
+                    <tr className="bg-gray-100 border-b">
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        Data
+                      </th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        Cliente
+                      </th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        Valor
+                      </th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        Itens
+                      </th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        Ações
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.vendasDetalhadas.map((venda) => (
+                      <tr
+                        key={venda.id}
+                        className="border-b even:bg-gray-50 hover:bg-gray-100"
+                      >
+                        <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                          {new Date(venda.dataVenda).toLocaleDateString(
+                            "pt-BR"
+                          )}
+                        </td>
+                        <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                          {venda.cliente?.nome || "N/A"}
+                        </td>
+                        <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                          R$ {venda.valorTotal.toFixed(2)}
+                        </td>
+                        <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClasses(
+                              venda.statusPagamento
+                            )}`}
                           >
-                            {item.quantidade}x{" "}
-                            {item.produto?.nome || "Desconhecido"}
-                          </div>
-                        ))}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <Link href={`/vendas/${venda.id}`}>
-                          <button className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-xs">
-                            Ver Venda
-                          </button>
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                            {venda.statusPagamento}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-gray-800 text-sm">
+                          {venda.itens.map((item, idx) => (
+                            <div
+                              key={item.id || idx}
+                              className="whitespace-nowrap mb-1 last:mb-0"
+                            >
+                              <span className="font-medium">
+                                {item.quantidade}x
+                              </span>{" "}
+                              {item.produto?.nome || "Desconhecido"}
+                            </div>
+                          ))}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <Link href={`/vendas/${venda.id}`}>
+                            <button className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-xs">
+                              Ver Venda
+                            </button>
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
-          <h3 className="text-xl font-semibold mb-3 mt-8 text-gray-700">
-            Produtos Mais Vendidos (por Quantidade)
-          </h3>
-          {reportData.relatorioProdutosMaisVendidos.length === 0 ? (
-            <p className="text-lg text-gray-600">
-              Nenhum produto encontrado para o período selecionado.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white border border-gray-200 shadow-md rounded-lg">
-                <thead>
-                  <tr className="bg-gray-100 border-b">
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Produto
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Tipo
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      SKU
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Qtd. Vendida
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Receita Total
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportData.relatorioProdutosMaisVendidos.map((produto) => (
-                    <tr key={produto.id} className="border-b hover:bg-gray-50">
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        {produto.nome}
-                      </td>
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        {produto.tipo}
-                      </td>
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        {produto.sku || "N/A"}
-                      </td>
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        {produto.totalQuantidadeVendida}
-                      </td>
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        R$ {produto.totalReceita.toFixed(2)}
-                      </td>
+          {/* Produtos Mais Vendidos */}
+          <div className="mb-8 border-t pt-6 mt-6">
+            <h3 className="text-xl font-semibold mb-4 text-gray-700">
+              Produtos Mais Vendidos (por Quantidade)
+            </h3>
+            {reportData.relatorioProdutosMaisVendidos.length === 0 ? (
+              <p className="text-lg text-gray-600">
+                Nenhum produto encontrado para o período selecionado.
+              </p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg shadow-md">
+                <table className="min-w-full bg-white border border-gray-200">
+                  <thead>
+                    <tr className="bg-gray-100 border-b">
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        Produto
+                      </th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        Tipo
+                      </th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        SKU
+                      </th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        Qtd. Vendida
+                      </th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        Receita Total
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {reportData.relatorioProdutosMaisVendidos.map((produto) => (
+                      <tr
+                        key={produto.id}
+                        className="border-b even:bg-gray-50 hover:bg-gray-100"
+                      >
+                        <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                          {produto.nome}
+                        </td>
+                        <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                          {produto.tipo}
+                        </td>
+                        <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                          {produto.sku || "N/A"}
+                        </td>
+                        <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                          {produto.totalQuantidadeVendida}
+                        </td>
+                        <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                          R$ {produto.totalReceita.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
-          <h3 className="text-xl font-semibold mb-3 mt-8 text-gray-700">
-            Resumo de Agendamentos
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-lg mb-6">
-            <p>
-              <strong>Total de Agendamentos no Período:</strong>{" "}
-              {reportData.totalAgendamentosPeriodo}
-            </p>
-            <div>
-              <p className="font-semibold text-gray-700">Por Tipo:</p>
-              {Object.entries(reportData.agendamentosPorTipo).length > 0 ? (
-                Object.entries(reportData.agendamentosPorTipo).map(
-                  ([tipo, count]) => (
-                    <p key={tipo} className="text-sm text-gray-600 ml-4">
-                      {tipo}: {count}
-                    </p>
-                  )
-                )
-              ) : (
-                <p className="text-sm text-gray-600 ml-4">
-                  Nenhum agendamento por tipo.
+          {/* Resumo de Agendamentos em Cards */}
+          <div className="mb-8 p-4 bg-gray-50 rounded-lg shadow-inner border-t pt-6 mt-6">
+            <h3 className="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">
+              Resumo de Agendamentos
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="bg-purple-100 p-4 rounded-lg shadow-sm">
+                <p className="text-sm text-purple-700 font-medium">
+                  Total de Agendamentos no Período:
                 </p>
-              )}
-            </div>
-            <div>
-              <p className="font-semibold text-gray-700">Por Status:</p>
-              {Object.entries(reportData.agendamentosPorStatus).length > 0 ? (
-                Object.entries(reportData.agendamentosPorStatus).map(
-                  ([status, count]) => (
-                    <p key={status} className="text-sm text-gray-600 ml-4">
-                      {status}: {count}
-                    </p>
-                  )
-                )
-              ) : (
-                <p className="text-sm text-gray-600 ml-4">
-                  Nenhum agendamento por status.
+                <p className="text-2xl font-bold text-purple-900 mt-1">
+                  {reportData.totalAgendamentosPeriodo}
                 </p>
-              )}
+              </div>
+              <div className="bg-orange-100 p-4 rounded-lg shadow-sm">
+                <p className="font-semibold text-orange-700 text-sm mb-2">
+                  Por Tipo:
+                </p>
+                {Object.entries(reportData.agendamentosPorTipo).length > 0 ? (
+                  Object.entries(reportData.agendamentosPorTipo).map(
+                    ([tipo, count]) => (
+                      <p key={tipo} className="text-sm text-orange-800 ml-2">
+                        <span className="font-medium">{tipo}:</span> {count}
+                      </p>
+                    )
+                  )
+                ) : (
+                  <p className="text-sm text-orange-800 ml-2">
+                    Nenhum agendamento por tipo.
+                  </p>
+                )}
+              </div>
+              <div className="bg-teal-100 p-4 rounded-lg shadow-sm">
+                <p className="font-semibold text-teal-700 text-sm mb-2">
+                  Por Status:
+                </p>
+                {Object.entries(reportData.agendamentosPorStatus).length > 0 ? (
+                  Object.entries(reportData.agendamentosPorStatus).map(
+                    ([status, count]) => (
+                      <p key={status} className="text-sm text-teal-800 ml-2">
+                        <span className="font-medium">{status}:</span> {count}
+                      </p>
+                    )
+                  )
+                ) : (
+                  <p className="text-sm text-teal-800 ml-2">
+                    Nenhum agendamento por status.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
-          <h3 className="text-xl font-semibold mb-3 mt-8 text-gray-700">
-            Agendamentos Detalhados
-          </h3>
-          {reportData.agendamentosDetalhados.length === 0 ? (
-            <p className="text-lg text-gray-600">
-              Nenhum agendamento encontrado para o período selecionado.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white border border-gray-200 shadow-md rounded-lg">
-                <thead>
-                  <tr className="bg-gray-100 border-b">
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Data
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Hora
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Cliente
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Tipo
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Ações
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportData.agendamentosDetalhados.map((agendamento) => (
-                    <tr
-                      key={agendamento.id}
-                      className="border-b hover:bg-gray-50"
-                    >
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        {new Date(
-                          agendamento.dataAgendamento
-                        ).toLocaleDateString("pt-BR")}
-                      </td>
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        {agendamento.horaAgendamento}
-                      </td>
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        {agendamento.cliente?.nome || "N/A"}
-                      </td>
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        {agendamento.tipoAgendamento}
-                      </td>
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        {agendamento.status}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <Link href={`/agendamentos/${agendamento.id}`}>
-                          <button className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-xs">
-                            Ver Detalhes
-                          </button>
-                        </Link>
-                      </td>
+          {/* Agendamentos Detalhados */}
+          <div className="border-t pt-6 mt-6">
+            <h3 className="text-xl font-semibold mb-4 text-gray-700">
+              Agendamentos Detalhados
+            </h3>
+            {reportData.agendamentosDetalhados.length === 0 ? (
+              <p className="text-lg text-gray-600">
+                Nenhum agendamento encontrado para o período selecionado.
+              </p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg shadow-md">
+                <table className="min-w-full bg-white border border-gray-200">
+                  <thead>
+                    <tr className="bg-gray-100 border-b">
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        Data
+                      </th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        Hora
+                      </th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        Cliente
+                      </th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        Tipo
+                      </th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                        Ações
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                  </thead>
+                  <tbody>
+                    {reportData.agendamentosDetalhados.map((agendamento) => (
+                      <tr
+                        key={agendamento.id}
+                        className="border-b even:bg-gray-50 hover:bg-gray-100"
+                      >
+                        <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                          {new Date(
+                            agendamento.dataAgendamento
+                          ).toLocaleDateString("pt-BR")}
+                        </td>
+                        <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                          {agendamento.horaAgendamento}
+                        </td>
+                        <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                          {agendamento.cliente?.nome || "N/A"}
+                        </td>
+                        <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                          {agendamento.tipoAgendamento}
+                        </td>
+                        <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClasses(
+                              agendamento.status
+                            )}`}
+                          >
+                            {agendamento.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <Link href={`/agendamentos/${agendamento.id}`}>
+                            <button className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-xs">
+                              Ver Detalhes
+                            </button>
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </motion.div>
       )}
 
       {notification && (
@@ -490,6 +639,6 @@ export default function RelatorioGeralPage() {
           onClose={() => setNotification(null)}
         />
       )}
-    </div>
+    </motion.div>
   );
 }

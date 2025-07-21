@@ -1,10 +1,13 @@
+// src/app/cadastrar/page.tsx
+
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
 import CombinedClientRecipeForm from "@/components/CombinedClientRecipeForm";
 import Notification from "@/components/Notification";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext"; // Importe o useAuth
+import { useAuth } from "@/context/AuthContext";
+import { motion } from "framer-motion"; // Importa motion para animações
 
 // Interfaces (idealmente em um arquivo de tipos global)
 interface Cliente {
@@ -62,8 +65,8 @@ interface VendaFormPropsData {
 }
 
 export default function CadastrarPage() {
-  const { currentUser, loadingAuth, userRole } = useAuth(); // Obtém o usuário, status de carregamento e papel
-  const router = useRouter(); // Hook para redirecionamento
+  const { currentUser, loadingAuth, userRole } = useAuth();
+  const router = useRouter();
 
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,7 +74,7 @@ export default function CadastrarPage() {
     message: string;
     type: "success" | "error";
   } | null>(null);
-  const [produtos, setProdutos] = useState<ProdutoSimples[]>([]); // Estado para produtos
+  const [produtos, setProdutos] = useState<ProdutoSimples[]>([]);
 
   // Função para buscar produtos (para o select de itens da venda)
   const fetchProdutosSimples = useCallback(async () => {
@@ -85,21 +88,18 @@ export default function CadastrarPage() {
     } catch (err) {
       console.error("Falha ao buscar produtos para o select:", err);
     }
-  }, []); // Dependências vazias, pois setProdutos é estável
+  }, []);
 
   // LÓGICA DE PROTEÇÃO DE ROTA E CARREGAMENTO DE DADOS
   useEffect(() => {
     if (!loadingAuth) {
-      // Só executa depois que o Firebase terminar de verificar o status de autenticação
       if (!currentUser) {
-        // Se NÃO houver usuário logado, redireciona para a página de login
         router.push("/login");
       } else {
-        // Se houver usuário logado, então pode buscar os dados da página
         fetchProdutosSimples();
       }
     }
-  }, [currentUser, loadingAuth, router, fetchProdutosSimples]); // Dependências: reage a mudanças no usuário logado ou no status de carregamento da autenticação
+  }, [currentUser, loadingAuth, router, fetchProdutosSimples]);
 
   const handleSubmit = async (data: {
     cliente: Partial<Cliente>;
@@ -109,7 +109,6 @@ export default function CadastrarPage() {
     setFormError(null);
     setIsSubmitting(true);
 
-    // Validações
     if (!data.cliente.nome || !data.cliente.cpf) {
       setFormError("Nome e CPF do cliente são obrigatórios.");
       setIsSubmitting(false);
@@ -120,7 +119,6 @@ export default function CadastrarPage() {
       setIsSubmitting(false);
       return;
     }
-    // Validação de venda: se há itens, a venda é obrigatória
     if (data.venda.itens && data.venda.itens.length > 0) {
       if (!data.venda.statusPagamento) {
         setFormError(
@@ -129,9 +127,6 @@ export default function CadastrarPage() {
         setIsSubmitting(false);
         return;
       }
-    } else {
-      // Se não há itens na venda, garante que o valor total seja 0 para não enviar undefined
-      data.venda.valorTotal = 0;
     }
 
     try {
@@ -223,34 +218,59 @@ export default function CadastrarPage() {
     }
   };
 
-  // Renderização Condicional com base no status de autenticação e carregamento
+  // Framer Motion variants para animação de entrada
+  const pageVariants = {
+    hidden: { opacity: 0, y: 30 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+  };
+
+  // --- TELAS DE CARREGAMENTO E ERRO PADRONIZADAS ---
   if (loadingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 pt-16 font-sans">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Carregando Autenticação...
-        </h1>
-        <p>Verificando seu status de login.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white/80 backdrop-blur-md rounded-xl p-8 shadow-xl text-center"
+        >
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            Carregando Autenticação...
+          </h1>
+          <p className="text-gray-600">Verificando seu status de login.</p>
+        </motion.div>
       </div>
     );
   }
 
   if (!currentUser) {
-    return null; // O useEffect já redirecionou, então não renderiza nada aqui
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-8 pt-16 font-sans">
-      <h1 className="text-4xl mb-8 text-gray-800 md:text-5xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 drop-shadow-lg">
+    <motion.div
+      className="container mx-auto p-8 pt-16"
+      initial="hidden"
+      animate="show"
+      variants={pageVariants}
+    >
+      <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 drop-shadow-lg mb-8">
         Cadastro Completo
       </h1>
-      <CombinedClientRecipeForm
-        onSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
-        formError={formError}
-        setFormError={setFormError} // Passa a função setFormError para o componente filho
-        produtos={produtos}
-      />
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="bg-white/70 backdrop-blur-md rounded-xl p-6 shadow-xl"
+      >
+        <CombinedClientRecipeForm
+          onSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
+          formError={formError}
+          produtos={produtos}
+        />
+      </motion.div>
 
       {notification && (
         <Notification
@@ -259,6 +279,6 @@ export default function CadastrarPage() {
           onClose={() => setNotification(null)}
         />
       )}
-    </div>
+    </motion.div>
   );
 }

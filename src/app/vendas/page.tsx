@@ -7,6 +7,8 @@ import VendaTable from "@/components/VendaTable";
 import Notification from "@/components/Notification";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion"; // Importa motion para animações
+import ConfirmationModal from "@/components/ConfirmationModal"; // Importa ConfirmationModal
 
 // Interfaces (mantidas as mesmas)
 interface ClienteSimples {
@@ -67,7 +69,14 @@ export default function VendasPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Função para buscar todas as vendas
+  // --- NOVIDADE AQUI: Estado para o modal de confirmação ---
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    id: string;
+    valorTotal: number;
+    onConfirm: () => void;
+  } | null>(null);
+
   const fetchVendas = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -88,7 +97,6 @@ export default function VendasPage() {
     }
   }, []);
 
-  // Função para buscar a lista de clientes (para o select do formulário)
   const fetchClientesSimples = useCallback(async () => {
     try {
       const response = await fetch("/api/clientes");
@@ -102,7 +110,6 @@ export default function VendasPage() {
     }
   }, []);
 
-  // Função para buscar a lista de produtos (para o select do formulário de itens)
   const fetchProdutosSimples = useCallback(async () => {
     try {
       const response = await fetch("/api/produtos");
@@ -116,7 +123,6 @@ export default function VendasPage() {
     }
   }, []);
 
-  // --- LÓGICA DE PROTEÇÃO DE ROTA E CARREGAMENTO DE DADOS ---
   useEffect(() => {
     if (!loadingAuth) {
       if (!currentUser) {
@@ -188,36 +194,43 @@ export default function VendasPage() {
     }
   };
 
+  // --- NOVIDADE AQUI: Lógica de exclusão com modal de confirmação ---
   const handleDelete = async (id: string, valorTotal: number) => {
-    if (
-      !window.confirm(
-        `Tem certeza que deseja excluir a venda de R$ ${valorTotal.toFixed(
-          2
-        )}? Isso reverterá o estoque dos produtos.`
-      )
-    ) {
-      return;
-    }
-    try {
-      const response = await fetch(`/api/vendas/${id}`, { method: "DELETE" });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || `Erro HTTP! Status: ${response.status}`
-        );
-      }
-      setNotification({
-        message: `Venda excluída com sucesso!`,
-        type: "success",
-      });
-      await fetchVendas();
-    } catch (err: any) {
-      console.error("Falha ao excluir venda:", err);
-      setNotification({
-        message: err.message || "Erro ao excluir venda.",
-        type: "error",
-      });
-    }
+    setConfirmModal({
+      isOpen: true,
+      id: id,
+      valorTotal: valorTotal,
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`/api/vendas/${id}`, {
+            method: "DELETE",
+          });
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              errorData.message || `Erro HTTP! Status: ${response.status}`
+            );
+          }
+          setNotification({
+            message: `Venda excluída com sucesso!`,
+            type: "success",
+          });
+          await fetchVendas();
+        } catch (err: any) {
+          console.error("Falha ao excluir venda:", err);
+          setNotification({
+            message: err.message || "Erro ao excluir venda.",
+            type: "error",
+          });
+        } finally {
+          setConfirmModal(null); // Fecha o modal após a ação
+        }
+      },
+    });
+  };
+
+  const handleCancelDelete = () => {
+    setConfirmModal(null); // Fecha o modal ao cancelar
   };
 
   const handleEdit = (venda: Venda) => {
@@ -251,14 +264,27 @@ export default function VendasPage() {
     );
   }, [vendas, searchTerm]);
 
-  // --- Renderização Condicional com base no status de autenticação e carregamento ---
+  // Framer Motion variants para animação de entrada
+  const pageVariants = {
+    hidden: { opacity: 0, y: 30 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+  };
+
+  // --- TELAS DE CARREGAMENTO E ERRO PADRONIZADAS ---
   if (loadingAuth) {
     return (
-      <div className="container mx-auto p-8 text-center pt-16">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Carregando Autenticação...
-        </h1>
-        <p>Verificando seu status de login.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white/80 backdrop-blur-md rounded-xl p-8 shadow-xl text-center"
+        >
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            Carregando Autenticação...
+          </h1>
+          <p className="text-gray-600">Verificando seu status de login.</p>
+        </motion.div>
       </div>
     );
   }
@@ -269,57 +295,89 @@ export default function VendasPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-8 text-center pt-16">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Registro de Vendas
-        </h1>
-        <p>Carregando vendas...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white/80 backdrop-blur-md rounded-xl p-8 shadow-xl text-center"
+        >
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            Carregando Vendas...
+          </h1>
+          <p className="text-gray-600">Buscando dados do sistema.</p>
+        </motion.div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto p-8 text-center text-red-600 pt-16">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Registro de Vendas
-        </h1>
-        <p>{error}</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white/80 backdrop-blur-md rounded-xl p-8 shadow-xl text-center"
+        >
+          <h1 className="text-3xl font-bold text-red-600 mb-4">
+            Erro ao Carregar Vendas
+          </h1>
+          <p className="text-gray-600">{error}</p>
+          <button
+            onClick={fetchVendas}
+            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-sm"
+          >
+            Tentar Novamente
+          </button>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-8 pt-16">
+    <motion.div
+      className="container mx-auto p-8 pt-16"
+      initial="hidden"
+      animate="show"
+      variants={pageVariants}
+    >
       <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 drop-shadow-lg mb-8">
         Registro de Vendas
       </h1>
 
-      <VendaForm
-        onSubmit={handleSubmit}
-        initialData={vendaToEdit}
-        onCancelEdit={handleCancelEdit}
-        isSubmitting={isSubmitting}
-        formError={formError}
-        clientes={clientes}
-        produtos={produtos}
-      />
-
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Pesquisar vendas por cliente, data, status ou observações..."
-          className="w-full p-2 border border-gray-300 rounded-md shadow-sm"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="bg-white/70 backdrop-blur-md rounded-xl p-6 shadow-xl"
+      >
+        <VendaForm
+          onSubmit={handleSubmit}
+          initialData={vendaToEdit}
+          onCancelEdit={handleCancelEdit}
+          isSubmitting={isSubmitting}
+          formError={formError}
+          clientes={clientes}
+          produtos={produtos}
         />
-      </div>
 
-      <VendaTable
-        vendas={filteredVendas}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
+        <div className="my-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+          <input
+            type="text"
+            placeholder="Pesquisar vendas por cliente, data, status ou observações..."
+            className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <VendaTable
+          vendas={filteredVendas}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      </motion.div>
 
       {notification && (
         <Notification
@@ -328,6 +386,20 @@ export default function VendasPage() {
           onClose={() => setNotification(null)}
         />
       )}
-    </div>
+
+      {confirmModal && (
+        <ConfirmationModal
+          isOpen={confirmModal.isOpen}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={handleCancelDelete}
+          title={`Confirmar Exclusão de Venda`}
+          message={`Tem certeza que deseja excluir a venda de R$ ${confirmModal.valorTotal.toFixed(
+            2
+          )}? Esta ação é irreversível e reverterá o estoque.`}
+          confirmText="Excluir"
+          cancelText="Manter"
+        />
+      )}
+    </motion.div>
   );
 }

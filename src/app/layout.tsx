@@ -31,14 +31,13 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="scroll-smooth">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900 min-h-screen pt-16`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen pt-16
+        bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] text-gray-900`}
       >
-        {/* --- CORREÇÃO AQUI: AuthProvider envolve TUDO que precisa de autenticação --- */}
         <AuthProvider>
-          <Navbar /> {/* Navbar agora está DENTRO do AuthProvider */}
+          <Navbar />
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {children}{" "}
-            {/* children (o conteúdo da página) também está dentro */}
           </main>
         </AuthProvider>
       </body>

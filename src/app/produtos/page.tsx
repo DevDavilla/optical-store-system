@@ -1,3 +1,4 @@
+// src/app/produtos/page.tsx
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -6,8 +7,10 @@ import ProdutoTable from "@/components/ProdutoTable";
 import Notification from "@/components/Notification";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion"; // Importa motion para animações
+import ConfirmationModal from "@/components/ConfirmationModal"; // Importa ConfirmationModal
 
-// Definir os Enums como types para uso no frontend
+// Interfaces (idealmente em um arquivo de tipos global)
 type TipoProdutoEnum =
   | "Armacao"
   | "LenteDeGrau"
@@ -72,41 +75,6 @@ interface Produto {
   updatedAt: string;
 }
 
-// Componente de Modal de Confirmação
-interface ConfirmationModalProps {
-  message: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
-  message,
-  onConfirm,
-  onCancel,
-}) => {
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 font-sans">
-      <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
-        <p className="text-lg font-semibold mb-4 text-gray-800">{message}</p>
-        <div className="flex justify-end space-x-3">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors duration-200"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200"
-          >
-            Confirmar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 export default function ProdutosPage() {
   const { currentUser, loadingAuth, userRole } = useAuth();
   const router = useRouter();
@@ -129,13 +97,14 @@ export default function ProdutosPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
 
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [produtoToDelete, setProdutoToDelete] = useState<{
+  // --- NOVIDADE AQUI: Estado para o modal de confirmação ---
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
     id: string;
     nome: string;
+    onConfirm: () => void;
   } | null>(null);
 
-  // Função para buscar todos os produtos
   const fetchProdutos = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -159,12 +128,10 @@ export default function ProdutosPage() {
   // --- LÓGICA DE PROTEÇÃO DE ROTA POR PAPEL ---
   useEffect(() => {
     if (!loadingAuth) {
-      // Só executa depois que o Firebase terminar de verificar o status de autenticação
       if (!currentUser) {
-        // Se NÃO houver usuário logado, redireciona para a página de login
         router.push("/login");
       } else if (userRole && userRole !== "admin") {
-        // Se houver usuário logado, mas o papel NÃO for 'admin', redireciona para a página inicial
+        // APENAS 'admin' pode acessar Produtos
         setNotification({
           message:
             "Acesso negado. Apenas administradores podem gerenciar produtos.",
@@ -172,7 +139,6 @@ export default function ProdutosPage() {
         });
         router.push("/");
       } else {
-        // Se for admin logado, então pode buscar os dados da página
         fetchProdutos();
       }
     }
@@ -228,44 +194,43 @@ export default function ProdutosPage() {
     }
   };
 
-  const handleDeleteClick = (id: string, nome: string) => {
-    setProdutoToDelete({ id, nome });
-    setShowConfirmModal(true);
+  // --- NOVIDADE AQUI: Lógica de exclusão com modal de confirmação ---
+  const handleDelete = async (id: string, nome: string) => {
+    setConfirmModal({
+      isOpen: true,
+      id: id,
+      nome: nome,
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`/api/produtos/${id}`, {
+            method: "DELETE",
+          });
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              errorData.message || `Erro HTTP! Status: ${response.status}`
+            );
+          }
+          setNotification({
+            message: `Produto ${nome} excluído com sucesso!`,
+            type: "success",
+          });
+          await fetchProdutos();
+        } catch (err: any) {
+          console.error("Falha ao excluir produto:", err);
+          setNotification({
+            message: err.message || "Erro ao excluir produto.",
+            type: "error",
+          });
+        } finally {
+          setConfirmModal(null); // Fecha o modal após a ação
+        }
+      },
+    });
   };
 
-  const confirmDelete = async () => {
-    if (!produtoToDelete) return;
-
-    setShowConfirmModal(false); // Fecha o modal
-    try {
-      const response = await fetch(`/api/produtos/${produtoToDelete.id}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || `Erro HTTP! Status: ${response.status}`
-        );
-      }
-      setNotification({
-        message: `Produto ${produtoToDelete.nome} excluído com sucesso!`,
-        type: "success",
-      });
-      await fetchProdutos();
-    } catch (err: any) {
-      console.error("Falha ao excluir produto:", err);
-      setNotification({
-        message: err.message || "Erro ao excluir produto.",
-        type: "error",
-      });
-    } finally {
-      setProdutoToDelete(null); // Limpa o produto a ser excluído
-    }
-  };
-
-  const cancelDelete = () => {
-    setShowConfirmModal(false);
-    setProdutoToDelete(null);
+  const handleCancelDelete = () => {
+    setConfirmModal(null); // Fecha o modal ao cancelar
   };
 
   const handleEdit = (produto: Produto) => {
@@ -302,79 +267,121 @@ export default function ProdutosPage() {
     );
   }, [produtos, searchTerm]);
 
-  // --- Renderização Condicional com base no status de autenticação e papel ---
+  // Framer Motion variants para animação de entrada
+  const pageVariants = {
+    hidden: { opacity: 0, y: 30 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+  };
+
+  // --- TELAS DE CARREGAMENTO E ERRO PADRONIZADAS ---
   if (loadingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 pt-16 font-sans">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Carregando Autenticação...
-        </h1>
-        <p>Verificando seu status de login e permissões.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white/80 backdrop-blur-md rounded-xl p-8 shadow-xl text-center"
+        >
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            Carregando Autenticação...
+          </h1>
+          <p className="text-gray-600">
+            Verificando seu status de login e permissões.
+          </p>
+        </motion.div>
       </div>
     );
   }
 
-  // Se não estiver logado OU o papel NÃO for 'admin', o useEffect já redirecionou.
-  // Retornamos null para evitar renderizar o conteúdo da página por um instante.
   if (!currentUser || userRole !== "admin") {
     return null;
   }
 
-  // Exibir tela de carregamento de dados após autenticação e permissão
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 pt-16 font-sans">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Controle de Estoque
-        </h1>
-        <p>Carregando produtos...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white/80 backdrop-blur-md rounded-xl p-8 shadow-xl text-center"
+        >
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            Carregando Produtos...
+          </h1>
+          <p className="text-gray-600">Buscando dados do sistema.</p>
+        </motion.div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 pt-16 text-red-600 font-sans">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Controle de Estoque
-        </h1>
-        <p>{error}</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white/80 backdrop-blur-md rounded-xl p-8 shadow-xl text-center"
+        >
+          <h1 className="text-3xl font-bold text-red-600 mb-4">
+            Erro ao Carregar Produtos
+          </h1>
+          <p className="text-gray-600">{error}</p>
+          <button
+            onClick={fetchProdutos}
+            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-sm"
+          >
+            Tentar Novamente
+          </button>
+        </motion.div>
       </div>
     );
   }
 
   // Renderiza o conteúdo da página apenas se o usuário for um admin logado e os dados carregados
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-8 pt-16 font-sans">
-      <h1 className="text-4xl mb-8 md:text-5xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 drop-shadow-lg">
+    <motion.div
+      className="container mx-auto p-8 pt-16"
+      initial="hidden"
+      animate="show"
+      variants={pageVariants}
+    >
+      <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 drop-shadow-lg mb-8">
         Controle de Estoque
       </h1>
 
-      <ProdutoForm
-        onSubmit={handleSubmit}
-        initialData={produtoToEdit}
-        onCancelEdit={handleCancelEdit}
-        isSubmitting={isSubmitting}
-        formError={formError}
-      />
-
-      <div className="mb-8 p-4 bg-white rounded-xl shadow-md border border-gray-200">
-        {" "}
-        {/* Estilizado o container da busca */}
-        <input
-          type="text"
-          placeholder="Pesquisar produtos por nome, tipo, marca, SKU ou fornecedor..."
-          className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-700" // Estilizado o input de busca
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="bg-white/70 backdrop-blur-md rounded-xl p-6 shadow-xl"
+      >
+        <ProdutoForm
+          onSubmit={handleSubmit}
+          initialData={produtoToEdit}
+          onCancelEdit={handleCancelEdit}
+          isSubmitting={isSubmitting}
+          formError={formError}
         />
-      </div>
 
-      <ProdutoTable
-        produtos={filteredProdutos}
-        onEdit={handleEdit}
-        onDelete={handleDeleteClick} // Alterado para usar o novo handler
-      />
+        <div className="my-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+          <input
+            type="text"
+            placeholder="Pesquisar produtos por nome, tipo, marca, SKU ou fornecedor..."
+            className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <ProdutoTable
+          produtos={filteredProdutos}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      </motion.div>
 
       {notification && (
         <Notification
@@ -384,13 +391,17 @@ export default function ProdutosPage() {
         />
       )}
 
-      {showConfirmModal && produtoToDelete && (
+      {confirmModal && (
         <ConfirmationModal
-          message={`Tem certeza que deseja excluir o produto "${produtoToDelete.nome}"? Esta ação é irreversível.`}
-          onConfirm={confirmDelete}
-          onCancel={cancelDelete}
+          isOpen={confirmModal.isOpen}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={handleCancelDelete}
+          title={`Confirmar Exclusão de Produto`}
+          message={`Tem certeza que deseja excluir o produto "${confirmModal.nome}"? Esta ação é irreversível.`}
+          confirmText="Excluir"
+          cancelText="Manter"
         />
       )}
-    </div>
+    </motion.div>
   );
 }

@@ -812,7 +812,7 @@ export default function ProdutoForm({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow-md disabled:opacity-50 transition-colors duration-200" // Cores e arredondamento padronizados
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:brightness-110 text-white font-semibold py-2 px-5 rounded-full shadow-lg transition-all duration-300 disabled:opacity-50"
           >
             {isSubmitting
               ? "Salvando..."
