@@ -55,11 +55,10 @@ export default function AgendamentosPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
 
-  // --- NOVIDADE AQUI: Estado para o modal de confirmação ---
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     id: string;
-    // nome: string; // Agendamento não tem nome direto, podemos usar tipo/data
+    nome: string;
     onConfirm: () => void;
   } | null>(null);
 

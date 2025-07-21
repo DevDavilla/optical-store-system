@@ -1,12 +1,9 @@
-// src/app/vendas/[id]/page.tsx
-
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext"; // Importe o useAuth
-import { useRouter } from "next/navigation"; // Importe o useRouter
+import { useAuth } from "@/context/AuthContext";
 
 interface ClienteSimples {
   id: string;
@@ -50,38 +47,32 @@ interface Venda {
 }
 
 export default function VendaDetailPage() {
-  const { currentUser, loadingAuth, userRole } = useAuth(); // Use o useAuth
-  const router = useRouter(); // Use o useRouter
-
+  const { currentUser, loadingAuth, userRole } = useAuth();
+  const router = useRouter();
   const { id } = useParams<{ id: string }>();
+
   const [venda, setVenda] = useState<Venda | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Proteção de rota e carregamento de dados
   useEffect(() => {
     if (!loadingAuth) {
-      // Quando o status de autenticação termina de carregar
       if (!currentUser) {
-        router.push("/login"); // Redireciona para login se não estiver autenticado
+        router.push("/login");
+      } else if (!id) {
+        setError("ID da venda não fornecido.");
+        setLoading(false);
       } else {
-        // Se estiver autenticado, busca os dados da página
-        if (id) {
-          // Garante que o ID existe antes de tentar buscar
-          fetchVenda();
-        } else {
-          setLoading(false);
-          setError("ID da venda não fornecido.");
-        }
+        fetchVenda();
       }
     }
-  }, [currentUser, loadingAuth, router, id]); // Dependências
+  }, [currentUser, loadingAuth, id, router]);
 
   async function fetchVenda() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/vendas/${id}`); // Busca venda pela API dinâmica
+      const response = await fetch(`/api/vendas/${id}`);
       if (!response.ok) {
         throw new Error(`Erro HTTP! Status: ${response.status}`);
       }
@@ -95,78 +86,78 @@ export default function VendaDetailPage() {
     }
   }
 
-  // Formatação de datas e valores
-  const formattedDataVenda = venda?.dataVenda
-    ? new Date(venda.dataVenda).toLocaleDateString("pt-BR")
-    : "N/A";
-  const formattedValorTotal = `R$ ${venda?.valorTotal.toFixed(2) || "0.00"}`;
-  const formattedCreatedAt = new Date(venda?.createdAt || "").toLocaleString(
-    "pt-BR"
-  );
-  const formattedUpdatedAt = new Date(venda?.updatedAt || "").toLocaleString(
-    "pt-BR"
-  );
+  const formatDate = (dateStr?: string) =>
+    dateStr ? new Date(dateStr).toLocaleDateString("pt-BR") : "N/A";
 
-  // Exibir tela de carregamento de autenticação
+  const formatDateTime = (dateStr?: string) =>
+    dateStr ? new Date(dateStr).toLocaleString("pt-BR") : "N/A";
+
+  const formatCurrency = (value?: number) =>
+    `R$ ${value?.toFixed(2) ?? "0.00"}`;
+
   if (loadingAuth) {
     return (
-      <div className="container mx-auto p-8 text-center pt-16">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Carregando Autenticação...
-        </h1>
-        <p>Verificando seu status de login.</p>
+      <div className="min-h-screen flex items-center justify-center p-8 pt-16 bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa]">
+        <div className="bg-white/80 backdrop-blur-md rounded-xl p-8 shadow-xl text-center">
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            Carregando Autenticação...
+          </h1>
+          <p className="text-gray-600">Verificando seu status de login.</p>
+        </div>
       </div>
     );
   }
 
-  // Exibir tela de acesso negado se não logado
-  if (!currentUser) {
-    return null; // O useEffect já redirecionou, então não renderiza nada aqui
-  }
+  if (!currentUser) return null;
 
-  // Exibir tela de carregamento de dados após autenticação
   if (loading) {
     return (
-      <div className="container mx-auto p-8 text-center pt-16">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Detalhes da Venda
-        </h1>
-        <p>Carregando detalhes da venda...</p>
+      <div className="min-h-screen flex items-center justify-center p-8 pt-16 bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa]">
+        <div className="bg-white/80 backdrop-blur-md rounded-xl p-8 shadow-xl text-center">
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            Detalhes da Venda
+          </h1>
+          <p className="text-gray-600">Carregando detalhes da venda...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto p-8 text-center text-red-600 pt-16">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Detalhes da Venda
-        </h1>
-        <p>{error}</p>
+      <div className="min-h-screen flex items-center justify-center p-8 pt-16 bg-gradient-to-br from-[#fff1f1] via-white to-[#fff1f1]">
+        <div className="bg-red-50 border border-red-300 rounded-lg p-8 shadow-md text-center max-w-lg">
+          <h1 className="text-3xl font-bold text-red-700 mb-4">
+            Erro ao carregar venda
+          </h1>
+          <p className="text-red-600 mb-6">{error}</p>
+          <button
+            onClick={fetchVenda}
+            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm"
+          >
+            Tentar novamente
+          </button>
+        </div>
       </div>
     );
   }
 
   if (!venda) {
     return (
-      <div className="container mx-auto p-8 text-center pt-16">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Detalhes da Venda
-        </h1>
-        <p>Venda não encontrada.</p>
+      <div className="min-h-screen flex items-center justify-center p-8 pt-16">
+        <p className="text-xl text-gray-600">Venda não encontrada.</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-8 pt-16">
-      <div className="bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-4xl font-bold text-center mb-6 text-gray-800">
+    <div className="container mx-auto p-8 pt-16 max-w-6xl">
+      <div className="bg-white p-8 rounded-lg shadow-lg">
+        <h1 className="text-4xl font-extrabold text-center mb-8 text-gray-900">
           Detalhes da Venda
         </h1>
 
-        {/* Informações da Venda */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-lg mb-8 border-b pb-6">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 border-b pb-8 mb-8 text-gray-800">
           <h2 className="lg:col-span-3 text-2xl font-semibold mb-4 text-gray-700">
             Informações da Venda
           </h2>
@@ -174,81 +165,90 @@ export default function VendaDetailPage() {
             <strong>ID da Venda:</strong> {venda.id}
           </p>
           <p>
-            <strong>Cliente:</strong> {venda.cliente?.nome || "N/A"}
+            <strong>Cliente:</strong> {venda.cliente?.nome ?? "N/A"}
           </p>
           <p>
-            <strong>Data da Venda:</strong> {formattedDataVenda}
+            <strong>Data da Venda:</strong> {formatDate(venda.dataVenda)}
           </p>
           <p>
-            <strong>Valor Total:</strong> {formattedValorTotal}
+            <strong>Valor Total:</strong> {formatCurrency(venda.valorTotal)}
           </p>
           <p>
-            <strong>Status Pagamento:</strong> {venda.statusPagamento}
+            <strong>Status Pagamento:</strong>{" "}
+            <span
+              className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
+                venda.statusPagamento.toLowerCase() === "pago"
+                  ? "bg-green-100 text-green-800"
+                  : venda.statusPagamento.toLowerCase() === "pendente"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : "bg-gray-100 text-gray-800"
+              }`}
+            >
+              {venda.statusPagamento}
+            </span>
           </p>
           <p className="md:col-span-2 lg:col-span-3">
             <strong>Observações:</strong> {venda.observacoes || "Nenhuma"}
           </p>
           <p>
-            <strong>Criado em:</strong> {formattedCreatedAt}
+            <strong>Criado em:</strong> {formatDateTime(venda.createdAt)}
           </p>
           <p>
-            <strong>Última atualização:</strong> {formattedUpdatedAt}
+            <strong>Última atualização:</strong>{" "}
+            {formatDateTime(venda.updatedAt)}
           </p>
-        </div>
+        </section>
 
-        {/* Seção de Itens da Venda */}
-        <div className="mt-8">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-700">
+        <section>
+          <h2 className="text-2xl font-semibold mb-6 text-gray-700">
             Itens da Venda
           </h2>
           {venda.itens.length === 0 ? (
-            <p className="text-lg text-gray-600">
-              Nenhum item registrado para esta venda.
-            </p>
+            <p className="text-gray-600 text-lg">Nenhum item registrado.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white border border-gray-200 shadow-md rounded-lg">
-                <thead>
-                  <tr className="bg-gray-100 border-b">
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+            <div className="overflow-x-auto rounded-lg shadow">
+              <table className="min-w-full border border-gray-200 bg-white">
+                <thead className="bg-gray-100 border-b border-gray-300">
+                  <tr>
+                    <th className="text-left py-3 px-4 uppercase tracking-wide text-gray-600 text-sm font-semibold">
                       Produto
                     </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="text-left py-3 px-4 uppercase tracking-wide text-gray-600 text-sm font-semibold">
                       Tipo
                     </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Qtd.
+                    <th className="text-left py-3 px-4 uppercase tracking-wide text-gray-600 text-sm font-semibold">
+                      Quantidade
                     </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Preço Unit.
+                    <th className="text-left py-3 px-4 uppercase tracking-wide text-gray-600 text-sm font-semibold">
+                      Preço Unitário
                     </th>
-                    <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="text-left py-3 px-4 uppercase tracking-wide text-gray-600 text-sm font-semibold">
                       Subtotal
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {venda.itens.map((item) => (
-                    <tr key={item.id} className="border-b hover:bg-gray-50">
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        <Link
-                          href={`/produtos/${item.produtoId}`}
-                          className="text-blue-600 hover:underline"
-                        >
-                          {item.produto?.nome || "Produto Desconhecido"}
+                    <tr
+                      key={item.id}
+                      className="border-b even:bg-gray-50 hover:bg-gray-100"
+                    >
+                      <td className="py-3 px-4 whitespace-nowrap text-blue-600 hover:underline">
+                        <Link href={`/produtos/${item.produtoId}`}>
+                          {item.produto?.nome ?? "Produto Desconhecido"}
                         </Link>
                       </td>
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        {item.produto?.tipo || "N/A"}
+                      <td className="py-3 px-4 whitespace-nowrap text-gray-800">
+                        {item.produto?.tipo ?? "N/A"}
                       </td>
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                      <td className="py-3 px-4 whitespace-nowrap text-gray-800">
                         {item.quantidade}
                       </td>
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        R$ {item.precoUnitario.toFixed(2)}
+                      <td className="py-3 px-4 whitespace-nowrap text-gray-800">
+                        {formatCurrency(item.precoUnitario)}
                       </td>
-                      <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                        R$ {item.subtotal.toFixed(2)}
+                      <td className="py-3 px-4 whitespace-nowrap text-gray-800">
+                        {formatCurrency(item.subtotal)}
                       </td>
                     </tr>
                   ))}
@@ -256,13 +256,15 @@ export default function VendaDetailPage() {
               </table>
             </div>
           )}
-        </div>
+        </section>
 
-        <Link href="/vendas">
-          <button className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md shadow-sm mt-8">
-            Voltar para a Lista de Vendas
-          </button>
-        </Link>
+        <div className="mt-10 flex justify-center">
+          <Link href="/vendas">
+            <button className="bg-gray-700 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-md shadow-md transition">
+              Voltar para a Lista de Vendas
+            </button>
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-// src/app/relatorios/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -6,9 +5,8 @@ import Notification from "@/components/Notification";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion"; // Importa motion para animações
+import { motion } from "framer-motion";
 
-// Interfaces para os dados do relatório consolidado
 interface ClienteRelatorio {
   nome: string;
 }
@@ -87,13 +85,11 @@ export default function RelatorioGeralPage() {
     type: "success" | "error";
   } | null>(null);
 
-  // Framer Motion variants para animação de entrada da página
   const pageVariants = {
     hidden: { opacity: 0, y: 30 },
     show: { opacity: 1, y: 0, transition: { duration: 0.6 } },
   };
 
-  // Função auxiliar para obter classes de badge de status
   const getStatusBadgeClasses = (status: string) => {
     switch (status.toLowerCase()) {
       case "pago":
@@ -111,13 +107,11 @@ export default function RelatorioGeralPage() {
     }
   };
 
-  // --- LÓGICA DE PROTEÇÃO DE ROTA POR PAPEL ---
   useEffect(() => {
     if (!loadingAuth) {
       if (!currentUser) {
         router.push("/login");
       } else if (userRole && userRole !== "admin") {
-        // APENAS 'admin' pode acessar Relatórios
         setNotification({
           message:
             "Acesso negado. Apenas administradores podem ver relatórios.",
@@ -181,7 +175,6 @@ export default function RelatorioGeralPage() {
     }
   };
 
-  // --- TELAS DE CARREGAMENTO E ERRO PADRONIZADAS (com estilos do ClientesPage) ---
   if (loadingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
@@ -203,12 +196,10 @@ export default function RelatorioGeralPage() {
   }
 
   if (!currentUser || userRole !== "admin") {
-    return null; // O useEffect já redirecionou ou exibiu notificação
+    return null;
   }
 
-  // Adicionado tela de carregamento para a busca de dados do relatório
   if (loading && !reportData) {
-    // Mostra carregamento apenas se não houver dados ainda
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
         <motion.div
@@ -227,7 +218,6 @@ export default function RelatorioGeralPage() {
   }
 
   if (error && !reportData) {
-    // Mostra erro apenas se não houver dados do relatório
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
         <motion.div
@@ -256,7 +246,7 @@ export default function RelatorioGeralPage() {
       className="container mx-auto p-8 pt-16"
       initial="hidden"
       animate="show"
-      variants={pageVariants} // Aplica a animação de entrada
+      variants={pageVariants}
     >
       <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 drop-shadow-lg mb-8">
         Relatório Geral de Vendas e Agendamentos
@@ -266,7 +256,7 @@ export default function RelatorioGeralPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
-        className="bg-white/70 backdrop-blur-md rounded-xl p-6 shadow-xl mb-8" // Contêiner principal do conteúdo
+        className="bg-white/70 backdrop-blur-md rounded-xl p-6 shadow-xl mb-8"
       >
         <h2 className="text-2xl font-semibold mb-4 text-gray-800">
           Gerar Relatório por Período
@@ -284,7 +274,7 @@ export default function RelatorioGeralPage() {
               id="startDate"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500" // Ajustado p-3 e focus
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
           <div>
@@ -299,7 +289,7 @@ export default function RelatorioGeralPage() {
               id="endDate"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500" // Ajustado p-3 e focus
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
           <button
@@ -320,13 +310,13 @@ export default function RelatorioGeralPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="bg-white/70 backdrop-blur-md rounded-xl p-6 shadow-xl mb-8" // Contêiner para os resultados do relatório
+          className="bg-white/70 backdrop-blur-md rounded-xl p-6 shadow-xl mb-8"
         >
           <h2 className="text-2xl font-semibold mb-6 text-gray-800">
             Resultados do Relatório
           </h2>
 
-          {/* Resumo de Vendas em Cards */}
+          {/* Resumo de Vendas */}
           <div className="mb-8 p-4 bg-gray-50 rounded-lg shadow-inner">
             <h3 className="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">
               Resumo de Vendas
@@ -417,18 +407,17 @@ export default function RelatorioGeralPage() {
                               key={item.id || idx}
                               className="whitespace-nowrap mb-1 last:mb-0"
                             >
-                              <span className="font-medium">
-                                {item.quantidade}x
-                              </span>{" "}
-                              {item.produto?.nome || "Desconhecido"}
+                              {item.produto?.nome} x{item.quantidade} ( R$
+                              {item.precoUnitario.toFixed(2)})
                             </div>
                           ))}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <Link href={`/vendas/${venda.id}`}>
-                            <button className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-xs">
-                              Ver Venda
-                            </button>
+                        <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                          <Link
+                            href={`/vendas/${venda.id}`}
+                            className="text-indigo-600 hover:text-indigo-900 font-semibold"
+                          >
+                            Detalhes
                           </Link>
                         </td>
                       </tr>
@@ -442,11 +431,11 @@ export default function RelatorioGeralPage() {
           {/* Produtos Mais Vendidos */}
           <div className="mb-8 border-t pt-6 mt-6">
             <h3 className="text-xl font-semibold mb-4 text-gray-700">
-              Produtos Mais Vendidos (por Quantidade)
+              Produtos Mais Vendidos
             </h3>
             {reportData.relatorioProdutosMaisVendidos.length === 0 ? (
               <p className="text-lg text-gray-600">
-                Nenhum produto encontrado para o período selecionado.
+                Nenhum produto vendido no período selecionado.
               </p>
             ) : (
               <div className="overflow-x-auto rounded-lg shadow-md">
@@ -463,7 +452,7 @@ export default function RelatorioGeralPage() {
                         SKU
                       </th>
                       <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                        Qtd. Vendida
+                        Quantidade Vendida
                       </th>
                       <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
                         Receita Total
@@ -471,25 +460,25 @@ export default function RelatorioGeralPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {reportData.relatorioProdutosMaisVendidos.map((produto) => (
+                    {reportData.relatorioProdutosMaisVendidos.map((prod) => (
                       <tr
-                        key={produto.id}
+                        key={prod.id}
                         className="border-b even:bg-gray-50 hover:bg-gray-100"
                       >
                         <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                          {produto.nome}
+                          {prod.nome}
                         </td>
                         <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                          {produto.tipo}
+                          {prod.tipo}
                         </td>
                         <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                          {produto.sku || "N/A"}
+                          {prod.sku || "N/A"}
                         </td>
                         <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                          {produto.totalQuantidadeVendida}
+                          {prod.totalQuantidadeVendida}
                         </td>
                         <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
-                          R$ {produto.totalReceita.toFixed(2)}
+                          R$ {prod.totalReceita.toFixed(2)}
                         </td>
                       </tr>
                     ))}
@@ -499,61 +488,8 @@ export default function RelatorioGeralPage() {
             )}
           </div>
 
-          {/* Resumo de Agendamentos em Cards */}
-          <div className="mb-8 p-4 bg-gray-50 rounded-lg shadow-inner border-t pt-6 mt-6">
-            <h3 className="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">
-              Resumo de Agendamentos
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="bg-purple-100 p-4 rounded-lg shadow-sm">
-                <p className="text-sm text-purple-700 font-medium">
-                  Total de Agendamentos no Período:
-                </p>
-                <p className="text-2xl font-bold text-purple-900 mt-1">
-                  {reportData.totalAgendamentosPeriodo}
-                </p>
-              </div>
-              <div className="bg-orange-100 p-4 rounded-lg shadow-sm">
-                <p className="font-semibold text-orange-700 text-sm mb-2">
-                  Por Tipo:
-                </p>
-                {Object.entries(reportData.agendamentosPorTipo).length > 0 ? (
-                  Object.entries(reportData.agendamentosPorTipo).map(
-                    ([tipo, count]) => (
-                      <p key={tipo} className="text-sm text-orange-800 ml-2">
-                        <span className="font-medium">{tipo}:</span> {count}
-                      </p>
-                    )
-                  )
-                ) : (
-                  <p className="text-sm text-orange-800 ml-2">
-                    Nenhum agendamento por tipo.
-                  </p>
-                )}
-              </div>
-              <div className="bg-teal-100 p-4 rounded-lg shadow-sm">
-                <p className="font-semibold text-teal-700 text-sm mb-2">
-                  Por Status:
-                </p>
-                {Object.entries(reportData.agendamentosPorStatus).length > 0 ? (
-                  Object.entries(reportData.agendamentosPorStatus).map(
-                    ([status, count]) => (
-                      <p key={status} className="text-sm text-teal-800 ml-2">
-                        <span className="font-medium">{status}:</span> {count}
-                      </p>
-                    )
-                  )
-                ) : (
-                  <p className="text-sm text-teal-800 ml-2">
-                    Nenhum agendamento por status.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Agendamentos Detalhados */}
-          <div className="border-t pt-6 mt-6">
+          {/* Agendamentos */}
+          <div className="mb-8 border-t pt-6 mt-6">
             <h3 className="text-xl font-semibold mb-4 text-gray-700">
               Agendamentos Detalhados
             </h3>
@@ -582,7 +518,7 @@ export default function RelatorioGeralPage() {
                         Status
                       </th>
                       <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                        Ações
+                        Observações
                       </th>
                     </tr>
                   </thead>
@@ -606,7 +542,7 @@ export default function RelatorioGeralPage() {
                         <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
                           {agendamento.tipoAgendamento}
                         </td>
-                        <td className="px-4 py-4 text-gray-800 whitespace-nowrap">
+                        <td className="px-4 py-4 whitespace-nowrap">
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClasses(
                               agendamento.status
@@ -615,12 +551,8 @@ export default function RelatorioGeralPage() {
                             {agendamento.status}
                           </span>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <Link href={`/agendamentos/${agendamento.id}`}>
-                            <button className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded text-xs">
-                              Ver Detalhes
-                            </button>
-                          </Link>
+                        <td className="px-4 py-4 text-gray-800 text-sm">
+                          {agendamento.observacoes || "-"}
                         </td>
                       </tr>
                     ))}
@@ -628,6 +560,62 @@ export default function RelatorioGeralPage() {
                 </table>
               </div>
             )}
+          </div>
+
+          {/* Estatísticas de Agendamento */}
+          <div className="mb-8 border-t pt-6 mt-6">
+            <h3 className="text-xl font-semibold mb-4 text-gray-700">
+              Estatísticas de Agendamento
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-indigo-100 p-4 rounded-lg shadow-sm text-center">
+                <p className="text-sm text-indigo-700 font-semibold">
+                  Total de Agendamentos no Período
+                </p>
+                <p className="text-3xl font-bold text-indigo-900 mt-1">
+                  {reportData.totalAgendamentosPeriodo}
+                </p>
+              </div>
+
+              <div className="bg-yellow-100 p-4 rounded-lg shadow-sm text-center">
+                <p className="text-sm text-yellow-700 font-semibold">
+                  Agendamentos por Tipo
+                </p>
+                <ul className="mt-2 text-left text-sm space-y-1 text-yellow-900">
+                  {Object.entries(reportData.agendamentosPorTipo).map(
+                    ([tipo, quantidade]) => (
+                      <li key={tipo}>
+                        {tipo}: <strong>{quantidade}</strong>
+                      </li>
+                    )
+                  )}
+                </ul>
+              </div>
+
+              <div className="bg-green-100 p-4 rounded-lg shadow-sm text-center">
+                <p className="text-sm text-green-700 font-semibold">
+                  Agendamentos por Status
+                </p>
+                <ul className="mt-2 text-left text-sm space-y-1 text-green-900">
+                  {Object.entries(reportData.agendamentosPorStatus).map(
+                    ([status, quantidade]) => (
+                      <li key={status}>
+                        {status}: <strong>{quantidade}</strong>
+                      </li>
+                    )
+                  )}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-8">
+            <Link
+              href="/"
+              className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-md shadow-lg transition"
+            >
+              Voltar ao Início
+            </Link>
           </div>
         </motion.div>
       )}

@@ -11,6 +11,11 @@ import Notification from "@/components/Notification";
 import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
 
+interface FirebaseError {
+  code: string;
+  message: string;
+}
+
 export default function RegisterPage() {
   const { currentUser, loadingAuth, userRole } = useAuth();
   const [email, setEmail] = useState("");
@@ -40,7 +45,7 @@ export default function RegisterPage() {
     }
   }, [currentUser, loadingAuth, userRole, router]);
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setNotification(null);
@@ -77,13 +82,14 @@ export default function RegisterPage() {
       setPassword("");
       setConfirmPassword("");
       setSelectedRole("funcionario");
-    } catch (err: any) {
+    } catch (err) {
+      const error = err as FirebaseError;
       let errorMessage = "Erro ao cadastrar. Tente novamente.";
-      if (err.code === "auth/email-already-in-use")
+      if (error.code === "auth/email-already-in-use")
         errorMessage = "Este e-mail já está em uso.";
-      else if (err.code === "auth/invalid-email")
+      else if (error.code === "auth/invalid-email")
         errorMessage = "Formato de e-mail inválido.";
-      else if (err.code === "auth/weak-password")
+      else if (error.code === "auth/weak-password")
         errorMessage = "A senha deve ter pelo menos 6 caracteres.";
       setError(errorMessage);
       setNotification({ message: errorMessage, type: "error" });

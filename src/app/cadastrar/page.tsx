@@ -149,6 +149,11 @@ export default function CadastrarPage() {
         );
       }
       newClient = await clientResponse.json();
+
+      if (!newClient) {
+        throw new Error("Resposta inválida ao cadastrar cliente.");
+      }
+
       const newClientId = newClient.id;
 
       if (!newClientId) {
@@ -268,6 +273,7 @@ export default function CadastrarPage() {
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
           formError={formError}
+          setFormError={setFormError}
           produtos={produtos}
         />
       </motion.div>
