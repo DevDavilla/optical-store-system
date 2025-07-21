@@ -7,10 +7,9 @@ import VendaTable from "@/components/VendaTable";
 import Notification from "@/components/Notification";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion"; // Importa motion para animações
-import ConfirmationModal from "@/components/ConfirmationModal"; // Importa ConfirmationModal
+import { motion } from "framer-motion";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
-// Interfaces (mantidas as mesmas)
 interface ClienteSimples {
   id: string;
   nome: string;
@@ -48,7 +47,7 @@ interface Venda {
 }
 
 export default function VendasPage() {
-  const { currentUser, loadingAuth, userRole } = useAuth();
+  const { currentUser, loadingAuth } = useAuth();
   const router = useRouter();
 
   const [vendas, setVendas] = useState<Venda[]>([]);
@@ -69,7 +68,6 @@ export default function VendasPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
 
-  // --- NOVIDADE AQUI: Estado para o modal de confirmação ---
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     id: string;
@@ -82,9 +80,8 @@ export default function VendasPage() {
     setError(null);
     try {
       const response = await fetch("/api/vendas");
-      if (!response.ok) {
+      if (!response.ok)
         throw new Error(`Erro HTTP! Status: ${response.status}`);
-      }
       const data: Venda[] = await response.json();
       setVendas(data);
     } catch (err) {
@@ -100,9 +97,8 @@ export default function VendasPage() {
   const fetchClientesSimples = useCallback(async () => {
     try {
       const response = await fetch("/api/clientes");
-      if (!response.ok) {
+      if (!response.ok)
         throw new Error(`Erro HTTP! Status: ${response.status}`);
-      }
       const data: ClienteSimples[] = await response.json();
       setClientes(data);
     } catch (err) {
@@ -113,9 +109,8 @@ export default function VendasPage() {
   const fetchProdutosSimples = useCallback(async () => {
     try {
       const response = await fetch("/api/produtos");
-      if (!response.ok) {
+      if (!response.ok)
         throw new Error(`Erro HTTP! Status: ${response.status}`);
-      }
       const data: ProdutoSimples[] = await response.json();
       setProdutos(data);
     } catch (err) {
@@ -161,7 +156,7 @@ export default function VendasPage() {
         : "/api/vendas";
 
       const response = await fetch(url, {
-        method: method,
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
@@ -182,11 +177,12 @@ export default function VendasPage() {
         } com sucesso!`,
         type: "success",
       });
-    } catch (err: any) {
-      console.error("Falha ao salvar venda:", err);
-      setFormError(err.message || "Erro ao salvar venda. Tente novamente.");
+    } catch (err) {
+      const error = err as Error;
+      console.error("Falha ao salvar venda:", error);
+      setFormError(error.message || "Erro ao salvar venda. Tente novamente.");
       setNotification({
-        message: err.message || "Erro ao salvar venda.",
+        message: error.message || "Erro ao salvar venda.",
         type: "error",
       });
     } finally {
@@ -194,12 +190,11 @@ export default function VendasPage() {
     }
   };
 
-  // --- NOVIDADE AQUI: Lógica de exclusão com modal de confirmação ---
   const handleDelete = async (id: string, valorTotal: number) => {
     setConfirmModal({
       isOpen: true,
-      id: id,
-      valorTotal: valorTotal,
+      id,
+      valorTotal,
       onConfirm: async () => {
         try {
           const response = await fetch(`/api/vendas/${id}`, {
@@ -216,22 +211,21 @@ export default function VendasPage() {
             type: "success",
           });
           await fetchVendas();
-        } catch (err: any) {
-          console.error("Falha ao excluir venda:", err);
+        } catch (err) {
+          const error = err as Error;
+          console.error("Falha ao excluir venda:", error);
           setNotification({
-            message: err.message || "Erro ao excluir venda.",
+            message: error.message || "Erro ao excluir venda.",
             type: "error",
           });
         } finally {
-          setConfirmModal(null); // Fecha o modal após a ação
+          setConfirmModal(null);
         }
       },
     });
   };
 
-  const handleCancelDelete = () => {
-    setConfirmModal(null); // Fecha o modal ao cancelar
-  };
+  const handleCancelDelete = () => setConfirmModal(null);
 
   const handleEdit = (venda: Venda) => {
     setEditingVendaId(venda.id);
@@ -245,32 +239,24 @@ export default function VendasPage() {
   };
 
   const filteredVendas = useMemo(() => {
-    if (!searchTerm) {
-      return vendas;
-    }
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    if (!searchTerm) return vendas;
+    const lowerSearch = searchTerm.toLowerCase();
     return vendas.filter(
       (venda) =>
-        (venda.cliente?.nome &&
-          venda.cliente.nome.toLowerCase().includes(lowerCaseSearchTerm)) ||
-        (venda.dataVenda &&
-          new Date(venda.dataVenda)
-            .toLocaleDateString("pt-BR")
-            .includes(lowerCaseSearchTerm)) ||
-        (venda.statusPagamento &&
-          venda.statusPagamento.toLowerCase().includes(lowerCaseSearchTerm)) ||
-        (venda.observacoes &&
-          venda.observacoes.toLowerCase().includes(lowerCaseSearchTerm))
+        venda.cliente?.nome?.toLowerCase().includes(lowerSearch) ||
+        new Date(venda.dataVenda)
+          .toLocaleDateString("pt-BR")
+          .includes(lowerSearch) ||
+        venda.statusPagamento?.toLowerCase().includes(lowerSearch) ||
+        venda.observacoes?.toLowerCase().includes(lowerSearch)
     );
   }, [vendas, searchTerm]);
 
-  // Framer Motion variants para animação de entrada
   const pageVariants = {
     hidden: { opacity: 0, y: 30 },
     show: { opacity: 1, y: 0, transition: { duration: 0.6 } },
   };
 
-  // --- TELAS DE CARREGAMENTO E ERRO PADRONIZADAS ---
   if (loadingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
@@ -289,9 +275,7 @@ export default function VendasPage() {
     );
   }
 
-  if (!currentUser) {
-    return null;
-  }
+  if (!currentUser) return null;
 
   if (loading) {
     return (
@@ -392,7 +376,7 @@ export default function VendasPage() {
           isOpen={confirmModal.isOpen}
           onConfirm={confirmModal.onConfirm}
           onCancel={handleCancelDelete}
-          title={`Confirmar Exclusão de Venda`}
+          title="Confirmar Exclusão de Venda"
           message={`Tem certeza que deseja excluir a venda de R$ ${confirmModal.valorTotal.toFixed(
             2
           )}? Esta ação é irreversível e reverterá o estoque.`}
