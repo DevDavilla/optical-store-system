@@ -112,7 +112,7 @@ export default function HomePage() {
             priority
           />
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 drop-shadow-lg">
-            Bem-vindo ao Group SL
+            Bem-vindo a Greece
           </h1>
           <p className="mt-4 max-w-2xl text-center text-lg md:text-xl text-gray-700">
             Sua solução completa para gerenciar clientes, receitas e

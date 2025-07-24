@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(novoAgendamento, { status: 201 }); // 201 Created
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erro ao criar agendamento:", error);
     if (error.code === "P2025") {
       // Por exemplo, se o clienteId não existir

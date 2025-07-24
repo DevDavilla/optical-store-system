@@ -2,11 +2,12 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react"; // Adicionado useCallback
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext"; // <-- Importe o useAuth
-import { useRouter } from "next/navigation"; // <-- Importe o useRouter
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion"; // Importa motion para animações
 
 // Definir os Enums como types para uso no frontend (copiados do ProdutoForm)
 type TipoProdutoEnum =
@@ -50,10 +51,9 @@ interface Produto {
   descricao?: string;
   sku?: string;
 
-  // Campos específicos para Lente de Grau
   tipoLenteGrau?: TipoLenteGrauEnum;
   materialLenteGrau?: MaterialLenteGrauEnum;
-  tratamentosLenteGrau?: string[]; // Array de strings
+  tratamentosLenteGrau?: string[];
   grauEsfericoOD?: number;
   grauCilindricoOD?: number;
   grauEixoOD?: number;
@@ -64,7 +64,6 @@ interface Produto {
   grauAdicaoOE?: number;
   fabricanteLaboratorio?: string;
 
-  // Campos específicos para Lente de Contato
   curvaBaseLenteContato?: string;
   diametroLenteContato?: number;
   poderLenteContato?: number;
@@ -76,34 +75,16 @@ interface Produto {
 }
 
 export default function ProdutoDetailPage() {
-  const { currentUser, loadingAuth, userRole } = useAuth(); // <-- Use o useAuth
-  const router = useRouter(); // <-- Use o useRouter
+  const { currentUser, loadingAuth, userRole } = useAuth();
+  const router = useRouter();
 
   const { id } = useParams<{ id: string }>();
   const [produto, setProduto] = useState<Produto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // --- NOVIDADE AQUI: Proteção de rota e carregamento de dados ---
-  useEffect(() => {
-    if (!loadingAuth) {
-      // Quando o status de autenticação termina de carregar
-      if (!currentUser) {
-        router.push("/login"); // Redireciona para login se não estiver autenticado
-      } else {
-        // Se estiver autenticado, busca os dados da página
-        if (id) {
-          // Garante que o ID existe antes de tentar buscar
-          fetchProduto();
-        } else {
-          setLoading(false);
-          setError("ID do produto não fornecido.");
-        }
-      }
-    }
-  }, [currentUser, loadingAuth, router, id]); // Dependências
-
-  async function fetchProduto() {
+  // Função para buscar o produto (envolvida em useCallback)
+  const fetchProduto = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -119,7 +100,26 @@ export default function ProdutoDetailPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [id]); // Depende de 'id' para refetch quando o ID da URL muda
+
+  // Proteção de rota e carregamento de dados
+  useEffect(() => {
+    if (!loadingAuth) {
+      if (!currentUser) {
+        router.push("/login");
+      } else if (userRole && userRole !== "admin") {
+        // APENAS 'admin' pode acessar Produtos
+        router.push("/");
+      } else {
+        if (id) {
+          fetchProduto(); // Chama a função useCallback
+        } else {
+          setLoading(false);
+          setError("ID do produto não fornecido.");
+        }
+      }
+    }
+  }, [currentUser, loadingAuth, userRole, router, id, fetchProduto]); // Adicionado fetchProduto às dependências
 
   // Formatação de datas e preços
   const formattedCreatedAt = produto?.createdAt
@@ -135,61 +135,113 @@ export default function ProdutoDetailPage() {
     ? `R$ ${produto.precoVenda.toFixed(2)}`
     : "N/A";
 
-  // --- NOVIDADE AQUI: Exibir tela de carregamento de autenticação ---
+  // Framer Motion variants para animação de entrada
+  const pageVariants = {
+    hidden: { opacity: 0, y: 30 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+  };
+
+  // --- TELAS DE CARREGAMENTO E ERRO PADRONIZADAS ---
   if (loadingAuth) {
     return (
-      <div className="container mx-auto p-8 text-center pt-16">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Carregando Autenticação...
-        </h1>
-        <p>Verificando seu status de login.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white/80 backdrop-blur-md rounded-xl p-8 shadow-xl text-center"
+        >
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            Carregando Autenticação...
+          </h1>
+          <p className="text-gray-600">
+            Verificando seu status de login e permissões.
+          </p>
+        </motion.div>
       </div>
     );
   }
 
-  // --- NOVIDADE AQUI: Exibir tela de acesso negado se não logado ---
-  if (!currentUser) {
-    return null; // O useEffect já redirecionou, então não renderiza nada aqui
+  if (!currentUser || userRole !== "admin") {
+    return null;
   }
 
-  // --- NOVIDADE AQUI: Exibir tela de carregamento de dados após autenticação ---
   if (loading) {
     return (
-      <div className="container mx-auto p-8 text-center pt-16">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Detalhes do Produto
-        </h1>
-        <p>Carregando detalhes do produto...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white/80 backdrop-blur-md rounded-xl p-8 shadow-xl text-center"
+        >
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            Carregando Detalhes do Produto...
+          </h1>
+          <p className="text-gray-600">Buscando dados do sistema.</p>
+        </motion.div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto p-8 text-center text-red-600 pt-16">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Detalhes do Produto
-        </h1>
-        <p>{error}</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white/80 backdrop-blur-md rounded-xl p-8 shadow-xl text-center"
+        >
+          <h1 className="text-3xl font-bold text-red-600 mb-4">
+            Erro ao Carregar Produto
+          </h1>
+          <p className="text-gray-600">{error}</p>
+          <button
+            onClick={fetchProduto}
+            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-sm"
+          >
+            Tentar Novamente
+          </button>
+        </motion.div>
       </div>
     );
   }
 
   if (!produto) {
     return (
-      <div className="container mx-auto p-8 text-center pt-16">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Detalhes do Produto
-        </h1>
-        <p>Produto não encontrado.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white/80 backdrop-blur-md rounded-xl p-8 shadow-xl text-center"
+        >
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+            Produto não encontrado
+          </h1>
+          <p className="text-gray-600">
+            O produto com o ID especificado não foi encontrado.
+          </p>
+          <Link href="/produtos">
+            <button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-sm">
+              Voltar para Produtos
+            </button>
+          </Link>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-8 pt-16">
-      <div className="bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-4xl font-bold text-center mb-6 text-gray-800">
+    <motion.div
+      className="container mx-auto p-8 pt-16"
+      initial="hidden"
+      animate="show"
+      variants={pageVariants}
+    >
+      <div className="bg-white p-8 rounded-lg shadow-md border border-gray-200">
+        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 drop-shadow-lg mb-8">
           Detalhes do Produto: {produto.nome}
         </h1>
 
@@ -356,6 +408,6 @@ export default function ProdutoDetailPage() {
           </button>
         </Link>
       </div>
-    </div>
+    </motion.div>
   );
 }

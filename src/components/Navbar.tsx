@@ -62,7 +62,7 @@ export default function Navbar() {
               className="rounded-full mr-2"
             />
             <span className="text-lg font-semibold text-gray-800 hidden sm:block">
-              Ótica SL
+              GREECE
             </span>
           </Link>
 

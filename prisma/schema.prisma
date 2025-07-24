@@ -16,12 +16,12 @@ datasource db {
 model Cliente {
   id             String    @id @default(uuid())
   nome           String
-  cpf            String?   @unique // CPF pode ser nulo, mas se existir, deve ser único
+  cpf            String?   @unique 
   rg             String?
   dataNascimento DateTime? // Data de nascimento, pode ser nula
   telefone       String?
   email          String?   @unique
-  endereco       String?   // Ex: Rua, número, complemento
+  endereco       String?   
   cidade         String?
   estado         String?
   cep            String?
