@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-// Contexto padrão para rotas dinâmicas
-interface RouteContext {
-  params: { id: string };
-}
-
 // Função para obter uma venda específica por ID (GET /api/vendas/[id])
-export async function GET(request: NextRequest, context: RouteContext) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = context.params;
+    const { id } = params;
 
     const venda = await prisma.venda.findUnique({
       where: { id },
@@ -55,9 +53,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 // Função para atualizar uma venda por ID (PATCH /api/vendas/[id])
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = context.params;
+    const { id } = params;
     const body = await request.json();
 
     const dataToUpdate: { [key: string]: any } = {};
@@ -89,9 +90,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 // Função para excluir uma venda por ID (DELETE /api/vendas/[id])
-export async function DELETE(request: NextRequest, context: RouteContext) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = context.params;
+    const { id } = params;
 
     const result = await prisma.$transaction(async (prismaTransaction) => {
       const itensVenda = await prismaTransaction.itemVenda.findMany({
