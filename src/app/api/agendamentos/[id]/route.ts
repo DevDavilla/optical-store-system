@@ -3,11 +3,13 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-// Função para obter um agendamento específico por ID (GET /api/agendamentos/[id])
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+type Params = {
+  params: {
+    id: string;
+  };
+};
+
+export async function GET(request: Request, { params }: Params) {
   try {
     const { id } = params;
 
@@ -42,11 +44,7 @@ export async function GET(
   }
 }
 
-// Função para atualizar um agendamento por ID (PATCH /api/agendamentos/[id])
-export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: Request, { params }: Params) {
   try {
     const { id } = params;
     const body = await request.json();
@@ -96,11 +94,7 @@ export async function PATCH(
   }
 }
 
-// Função para excluir um agendamento por ID (DELETE /api/agendamentos/[id])
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request, { params }: Params) {
   try {
     const { id } = params;
 
