@@ -1,5 +1,3 @@
-// src/components/VendaTable.tsx
-
 "use client";
 
 import React from "react";
@@ -9,21 +7,25 @@ import { Pencil, Trash2, Eye } from "lucide-react";
 interface ClienteSimples {
   id: string;
   nome: string;
+  email?: string;
+  telefone?: string;
 }
 
 interface ProdutoSimples {
   id: string;
   nome: string;
+  precoVenda?: number;
+  quantidadeEmEstoque: number;
   sku?: string;
 }
 
 interface ItemVenda {
-  id: string;
+  id?: string;
   produtoId: string;
   produto?: ProdutoSimples;
   quantidade: number;
   precoUnitario: number;
-  subtotal: number;
+  subtotal?: number;
 }
 
 interface Venda {
@@ -85,7 +87,7 @@ export default function VendaTable({
                 <p key={item.id || idx} className="text-xs text-gray-600">
                   {item.quantidade}x{" "}
                   {item.produto?.nome || "Produto Desconhecido"} (R${" "}
-                  {item.subtotal.toFixed(2)})
+                  {item.subtotal?.toFixed(2) ?? "0.00"})
                 </p>
               ))}
             </div>

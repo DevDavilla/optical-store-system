@@ -1,4 +1,3 @@
-// src/app/vendas/page.tsx
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -24,13 +23,14 @@ interface ProdutoSimples {
   quantidadeEmEstoque: number;
 }
 
+// AQUI: subtotal mudou para opcional para evitar conflito de tipos
 interface ItemVenda {
   id?: string;
   produtoId: string;
   produto?: ProdutoSimples;
   quantidade: number;
   precoUnitario: number;
-  subtotal: number;
+  subtotal?: number; // <-- mudou para opcional
 }
 
 interface Venda {
@@ -41,7 +41,7 @@ interface Venda {
   valorTotal: number;
   statusPagamento: string;
   observacoes?: string;
-  itens: ItemVenda[];
+  itens: ItemVenda[]; // usa ItemVenda com subtotal opcional
   createdAt: string;
   updatedAt: string;
 }
