@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,80 +8,129 @@ datasource db {
 }
 
 model Cliente {
-  id             String    @id @default(uuid())
+  id             String        @id @default(uuid())
   nome           String
-  cpf            String?   @unique 
+  cpf            String?       @unique
   rg             String?
-  dataNascimento DateTime? // Data de nascimento, pode ser nula
+  dataNascimento DateTime?
   telefone       String?
-  email          String?   @unique
-  endereco       String?   
+  email          String?       @unique
+  endereco       String?
   cidade         String?
   estado         String?
   cep            String?
-  observacoes    String?   @db.Text // @db.Text para textos mais longos no PostgreSQL
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  observacoes    String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  agendamentos   Agendamento[]
+  receitas       Receita[]
+  vendas         Venda[]
 
-  receitas       Receita[] // Relação com Receita: Um cliente pode ter várias receitas
-  agendamentos   Agendamento[] // Relação com Agendamento: Um cliente pode ter vários agendamentos
-  vendas         Venda[] // Relação com Venda: Um cliente pode ter várias vendas
-
-  @@map("clientes") // Mapeia o nome da tabela no banco de dados
+  @@map("clientes")
 }
 
 model Receita {
-  id                 String    @id @default(uuid())
-  clienteId          String    @map("cliente_id") // ID do cliente ao qual esta receita pertence
-  dataReceita        DateTime  @map("data_receita") @db.Date // Data da prescrição
-  observacoes        String?   // Observações gerais da receita
+  id                     String   @id @default(uuid())
+  clienteId              String   @map("cliente_id")
+  dataReceita            DateTime @map("data_receita") @db.Date
+  observacoes            String?
+  odEsferico             Float?   @map("od_esferico")
+  odCilindrico           Float?   @map("od_cilindrico")
+  odEixo                 Int?     @map("od_eixo")
+  odAdicao               Float?   @map("od_adicao")
+  oeEsferico             Float?   @map("oe_esferico")
+  oeCilindrico           Float?   @map("oe_cilindrico")
+  oeEixo                 Int?     @map("oe_eixo")
+  oeAdicao               Float?   @map("oe_adicao")
+  distanciaPupilar       Float?   @map("distancia_pupilar")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+  distanciaNauseaPupilar Float?   @map("distancia_nausea_pupilar")
+  alturaLente            Float?   @map("altura_lente")
+  cliente                Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
-  // Campos para o Olho Direito (OD)
-  odEsferico         Float?    @map("od_esferico")
-  odCilindrico       Float?    @map("od_cilindrico")
-  odEixo             Int?      @map("od_eixo")
-  odAdicao           Float?    @map("od_adicao")
-
-  // Campos para o Olho Esquerdo (OE)
-  oeEsferico         Float?    @map("oe_esferico")
-  oeCilindrico       Float?    @map("oe_cilindrico")
-  oeEixo             Int?      @map("oe_eixo")
-  oeAdicao           Float?    @map("oe_adicao")
-
-  // Distância Pupilar (DP)
-  distanciaPupilar   Float?    @map("distancia_pupilar")
-
-  // Distância Naso-Pupilar (DNP)
-  distanciaNauseaPupilar Float? @map("distancia_nausea_pupilar")
-
-  // Altura da Lente
-  alturaLente        Float?    @map("altura_lente")
-
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
-
-  // Define a relação entre Receita e Cliente
-  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-
-  @@map("receitas") // Mapeia o nome da tabela no banco de dados
+  @@map("receitas")
 }
 
 model Agendamento {
-  id                 String    @id @default(uuid())
-  clienteId          String    @map("cliente_id") // ID do cliente ao qual este agendamento pertence
-  dataAgendamento    DateTime  @map("data_agendamento") @db.Date // Data do agendamento
-  horaAgendamento    String    @map("hora_agendamento") // Hora do agendamento (ex: "14:30")
-  tipoAgendamento    String    @map("tipo_agendamento") // Tipo de agendamento (ex: "Consulta", "Exame", "Retorno")
-  observacoes        String?   @db.Text // Observações adicionais
-  status             String    @default("Pendente") // Status do agendamento (ex: "Pendente", "Confirmado", "Realizado", "Cancelado")
+  id              String   @id @default(uuid())
+  clienteId       String   @map("cliente_id")
+  dataAgendamento DateTime @map("data_agendamento") @db.Date
+  horaAgendamento String   @map("hora_agendamento")
+  tipoAgendamento String   @map("tipo_agendamento")
+  observacoes     String?
+  status          String   @default("Pendente")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  cliente         Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
+  @@map("agendamentos")
+}
 
-  // Define a relação entre Agendamento e Cliente
-  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+model Produto {
+  id                       String                        @id @default(uuid())
+  nome                     String
+  marca                    String?
+  modelo                   String?
+  quantidadeEmEstoque      Int                           @default(0) @map("quantidade_em_estoque")
+  precoCusto               Float?                        @map("preco_custo")
+  precoVenda               Float?                        @map("preco_venda")
+  fornecedor               String?
+  descricao                String?
+  sku                      String?                       @unique
+  createdAt                DateTime                      @default(now()) @map("created_at")
+  updatedAt                DateTime                      @updatedAt @map("updated_at")
+  tipo                     TipoProdutoEnum
+  tipoLenteGrau            TipoLenteGrauEnum?            @map("tipo_lente_grau")
+  materialLenteGrau        MaterialLenteGrauEnum?        @map("material_lente_grau")
+  tratamentosLenteGrau     String[]                      @map("tratamentos_lente_grau")
+  grauEsfericoOD           Float?                        @map("grau_esferico_od")
+  grauEixoOD               Int?                          @map("grau_eixo_od")
+  grauEsfericoOE           Float?                        @map("grau_esferico_oe")
+  fabricanteLaboratorio    String?                       @map("fabricante_laboratorio")
+  curvaBaseLenteContato    String?                       @map("curva_base_lente_contato")
+  diametroLenteContato     Float?                        @map("diametro_lente_contato")
+  poderLenteContato        Float?                        @map("poder_lente_contato")
+  tipoDescarteLenteContato TipoDescarteLenteContatoEnum? @map("tipo_descarte_lente_contato")
+  solucoesLenteContato     String?                       @map("solucoes_lente_contato")
+  grauCilindricoOD         Float?                        @map("od_cilindrico")
+  grauAdicaoOE             Float?                        @map("oe_adicao")
+  grauCilindricoOE         Float?                        @map("oe_cilindrico")
+  grauAdicaoOD             Float?                        @map("od_adicao")
+  grauEixoOE               Int?                          @map("oe_eixo")
+  itensVenda               ItemVenda[]
 
-  @@map("agendamentos") // Mapeia o nome da tabela no banco de dados
+  @@map("produtos")
+}
+
+model Venda {
+  id              String      @id @default(uuid())
+  clienteId       String      @map("cliente_id")
+  dataVenda       DateTime    @default(now()) @map("data_venda")
+  valorTotal      Float       @map("valor_total")
+  statusPagamento String      @default("Pendente") @map("status_pagamento")
+  observacoes     String?
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  itens           ItemVenda[]
+  cliente         Cliente     @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("vendas")
+}
+
+model ItemVenda {
+  id            String   @id @default(uuid())
+  vendaId       String   @map("venda_id")
+  produtoId     String   @map("produto_id")
+  quantidade    Int
+  precoUnitario Float    @map("preco_unitario")
+  subtotal      Float
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  produto       Produto  @relation(fields: [produtoId], references: [id])
+  venda         Venda    @relation(fields: [vendaId], references: [id], onDelete: Cascade)
+
+  @@map("itens_venda")
 }
 
 enum TipoProdutoEnum {
@@ -123,84 +166,4 @@ enum TipoDescarteLenteContatoEnum {
   Trimestral
   Anual
   Outro
-}
-
-model Produto {
-  id                 String    @id @default(uuid())
-  nome               String
-  tipo               TipoProdutoEnum // Usar o Enum
-  marca              String?
-  modelo             String?
-  quantidadeEmEstoque Int      @map("quantidade_em_estoque") @default(0)
-  precoCusto         Float?    @map("preco_custo")
-  precoVenda         Float?    @map("preco_venda") // Usado para produtos e serviços
-  fornecedor         String?   // Nome do fornecedor
-  descricao          String?   @db.Text
-  sku                String?   @unique
-
-  // Campos específicos para Lente de Grau
-  tipoLenteGrau      TipoLenteGrauEnum?   @map("tipo_lente_grau")
-  materialLenteGrau  MaterialLenteGrauEnum? @map("material_lente_grau")
-  tratamentosLenteGrau String[] @map("tratamentos_lente_grau") // Array de strings para múltiplos tratamentos
-
-  // Graus de Lentes (se tipo for "Lente de Grau")
-  grauEsfericoOD     Float?    @map("grau_esferico_od")
-  grauCilindricoOD   Float?    @map("od_cilindrico")
-  grauEixoOD         Int?      @map("grau_eixo_od")
-  grauAdicaoOD       Float?    @map("od_adicao")
-
-  grauEsfericoOE     Float?    @map("grau_esferico_oe")
-  grauCilindricoOE   Float?    @map("oe_cilindrico")
-  grauEixoOE         Int?      @map("oe_eixo")
-  grauAdicaoOE       Float?    @map("oe_adicao")
-
-  fabricanteLaboratorio String? @map("fabricante_laboratorio")
-
-  // Campos específicos para Lente de Contato
-  curvaBaseLenteContato String? @map("curva_base_lente_contato") // Ex: "8.6"
-  diametroLenteContato  Float?  @map("diametro_lente_contato") // Ex: 14.2
-  poderLenteContato     Float?  @map("poder_lente_contato") // Grau da lente de contato
-  tipoDescarteLenteContato TipoDescarteLenteContatoEnum? @map("tipo_descarte_lente_contato")
-  solucoesLenteContato  String? @map("solucoes_lente_contato") // Ex: "Solução Multiuso"
-
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
-
-  itensVenda ItemVenda[] // Relação com Itens de Venda: Um produto pode estar em vários itens de venda
-
-  @@map("produtos") // Mapeia o nome da tabela no banco de dados
-}
-
-model Venda {
-  id                 String    @id @default(uuid())
-  clienteId          String    @map("cliente_id") // ID do cliente que fez a compra
-  dataVenda          DateTime  @default(now()) @map("data_venda") // Data e hora da venda
-  valorTotal         Float     @map("valor_total") // Valor total da venda
-  statusPagamento    String    @default("Pendente") @map("status_pagamento") // Ex: "Pendente", "Pago", "Parcelado"
-  observacoes        String?   @db.Text // Observações sobre a venda
-
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
-
-  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  itens   ItemVenda[] // Itens associados a esta venda
-
-  @@map("vendas")
-}
-
-model ItemVenda {
-  id                 String    @id @default(uuid())
-  vendaId            String    @map("venda_id") // ID da venda a que pertence
-  produtoId          String    @map("produto_id") // ID do produto vendido
-  quantidade         Int       // Quantidade do produto neste item da venda
-  precoUnitario      Float     @map("preco_unitario") // Preço do produto no momento da venda (pode ser diferente do precoVenda atual do produto)
-  subtotal           Float     // Subtotal deste item (quantidade * precoUnitario)
-
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
-
-  venda   Venda   @relation(fields: [vendaId], references: [id], onDelete: Cascade)
-  produto Produto @relation(fields: [produtoId], references: [id], onDelete: Restrict)
-
-  @@map("itens_venda")
 }
