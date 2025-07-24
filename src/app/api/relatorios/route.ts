@@ -78,7 +78,7 @@ export async function GET(request: Request) {
             produtosAgregados[id] = {
               id,
               nome,
-              sku,
+              sku: sku ?? undefined, // Corrigido para evitar erro de tipo null
               tipo,
               totalQuantidadeVendida: 0,
               totalReceita: 0,
