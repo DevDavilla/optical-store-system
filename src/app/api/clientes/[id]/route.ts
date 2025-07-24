@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params; // Acessa params diretamente
+    const { id } = params;
 
     const cliente = await prisma.cliente.findUnique({
       where: { id },
