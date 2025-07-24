@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+interface Params {
+  params: { id: string };
+}
+
 // GET: Buscar cliente por ID
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request, { params }: Params) {
   try {
     const cliente = await prisma.cliente.findUnique({
       where: { id: params.id },
@@ -36,10 +37,7 @@ export async function GET(
 }
 
 // DELETE: Excluir cliente por ID
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request, { params }: Params) {
   try {
     const clienteDeletado = await prisma.cliente.delete({
       where: { id: params.id },
@@ -49,14 +47,9 @@ export async function DELETE(
       { message: "Cliente excluído com sucesso!", cliente: clienteDeletado },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao excluir cliente:", error);
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      error.code === "P2025"
-    ) {
+    if (error.code === "P2025") {
       return NextResponse.json(
         { message: "Cliente não encontrado para exclusão." },
         { status: 404 }
@@ -71,10 +64,7 @@ export async function DELETE(
 }
 
 // PATCH: Atualizar cliente por ID
-export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: Request, { params }: Params) {
   try {
     const body = await request.json();
     const dataToUpdate: { [key: string]: any } = {};
@@ -101,21 +91,21 @@ export async function PATCH(
     });
 
     return NextResponse.json(clienteAtualizado, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao atualizar cliente:", error);
-    if (typeof error === "object" && error !== null && "code" in error) {
-      if (error.code === "P2025") {
-        return NextResponse.json(
-          { message: "Cliente não encontrado para atualização." },
-          { status: 404 }
-        );
-      }
-      if (error.code === "P2002") {
-        return NextResponse.json(
-          { message: "Email ou CPF já cadastrado para outro cliente." },
-          { status: 409 }
-        );
-      }
+
+    if (error.code === "P2025") {
+      return NextResponse.json(
+        { message: "Cliente não encontrado para atualização." },
+        { status: 404 }
+      );
+    }
+
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        { message: "Email ou CPF já cadastrado para outro cliente." },
+        { status: 409 }
+      );
     }
 
     return NextResponse.json(
