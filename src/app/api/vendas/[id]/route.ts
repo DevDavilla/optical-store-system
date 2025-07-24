@@ -1,15 +1,15 @@
-// src/app/api/vendas/[id]/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
-import { NextRequest, NextResponse } from "next/server"; // Importe NextRequest
-import prisma from "@/lib/prisma"; // Importa a instância global do PrismaClient
+// Contexto padrão para rotas dinâmicas
+interface RouteContext {
+  params: { id: string };
+}
 
 // Função para obter uma venda específica por ID (GET /api/vendas/[id])
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = context.params;
 
     const venda = await prisma.venda.findUnique({
       where: { id },
@@ -55,12 +55,9 @@ export async function GET(
 }
 
 // Função para atualizar uma venda por ID (PATCH /api/vendas/[id])
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = context.params;
     const body = await request.json();
 
     const dataToUpdate: { [key: string]: any } = {};
@@ -92,12 +89,9 @@ export async function PATCH(
 }
 
 // Função para excluir uma venda por ID (DELETE /api/vendas/[id])
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = context.params;
 
     const result = await prisma.$transaction(async (prismaTransaction) => {
       const itensVenda = await prismaTransaction.itemVenda.findMany({
