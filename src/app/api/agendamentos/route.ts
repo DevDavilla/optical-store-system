@@ -9,7 +9,6 @@ export async function GET() {
     const agendamentos = await prisma.agendamento.findMany({
       include: {
         cliente: {
-          // Inclui os dados do cliente relacionado
           select: {
             id: true,
             nome: true,
@@ -19,7 +18,7 @@ export async function GET() {
         },
       },
       orderBy: {
-        dataAgendamento: "asc", // Ordena por data (crescente)
+        dataAgendamento: "asc",
       },
     });
     return NextResponse.json(agendamentos, { status: 200 });
@@ -37,7 +36,6 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // Validação básica: clienteId, dataAgendamento, horaAgendamento e tipoAgendamento são essenciais
     if (
       !body.clienteId ||
       !body.dataAgendamento ||
@@ -53,10 +51,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Garante que a data está no formato Date para o Prisma
     const dataAgendamentoParsed = new Date(body.dataAgendamento);
     if (isNaN(dataAgendamentoParsed.getTime())) {
-      // Verifica se a data é válida
       return NextResponse.json(
         { message: "Formato de data de agendamento inválido." },
         { status: 400 }
@@ -66,26 +62,33 @@ export async function POST(request: Request) {
     const novoAgendamento = await prisma.agendamento.create({
       data: {
         cliente: {
-          connect: { id: body.clienteId }, // Conecta o agendamento a um cliente existente
+          connect: { id: body.clienteId },
         },
         dataAgendamento: dataAgendamentoParsed,
         horaAgendamento: body.horaAgendamento,
         tipoAgendamento: body.tipoAgendamento,
         observacoes: body.observacoes,
-        status: body.status || "Pendente", // Usa o status fornecido ou 'Pendente' como padrão
+        status: body.status || "Pendente",
       },
     });
 
-    return NextResponse.json(novoAgendamento, { status: 201 }); // 201 Created
+    return NextResponse.json(novoAgendamento, { status: 201 });
   } catch (error: unknown) {
     console.error("Erro ao criar agendamento:", error);
-    if (error.code === "P2025") {
-      // Por exemplo, se o clienteId não existir
+
+    // Verificação segura do código do erro
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as any).code === "P2025"
+    ) {
       return NextResponse.json(
         { message: "Cliente associado não encontrado." },
         { status: 404 }
       );
     }
+
     return NextResponse.json(
       { message: "Erro interno do servidor ao criar agendamento" },
       { status: 500 }
