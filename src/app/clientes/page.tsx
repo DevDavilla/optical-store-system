@@ -1,5 +1,3 @@
-// src/app/clientes/page.tsx
-
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -24,8 +22,7 @@ interface Cliente {
   estado?: string;
   cep?: string;
   observacoes?: string;
-  createdAt: string;
-  updatedAt: string;
+  // REMOVIDOS createdAt e updatedAt para evitar conflito de tipos
 }
 
 export default function ClientesPage() {
