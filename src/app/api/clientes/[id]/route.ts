@@ -2,13 +2,12 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 // GET: Buscar cliente por ID
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request, context: any) {
+  const { id } = context.params;
+
   try {
     const cliente = await prisma.cliente.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         receitas: {
           orderBy: {
@@ -36,13 +35,12 @@ export async function GET(
 }
 
 // DELETE: Excluir cliente por ID
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request, context: any) {
+  const { id } = context.params;
+
   try {
     const clienteDeletado = await prisma.cliente.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json(
@@ -66,10 +64,9 @@ export async function DELETE(
 }
 
 // PATCH: Atualizar cliente por ID
-export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: Request, context: any) {
+  const { id } = context.params;
+
   try {
     const body = await request.json();
     const dataToUpdate: { [key: string]: any } = {};
@@ -91,7 +88,7 @@ export async function PATCH(
       dataToUpdate.observacoes = body.observacoes;
 
     const clienteAtualizado = await prisma.cliente.update({
-      where: { id: params.id },
+      where: { id },
       data: dataToUpdate,
     });
 
