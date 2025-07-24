@@ -1,15 +1,16 @@
 // src/app/api/receitas/[id]/route.ts
 
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import prisma from "@/lib/prisma"; // Importa a instância global do PrismaClient
 
 // Função para obter uma receita específica por ID (GET /api/receitas/[id])
+// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id } = context.params; // Acessa params via context.params
 
     const receita = await prisma.receita.findUnique({
       where: { id },
@@ -41,12 +42,13 @@ export async function GET(
 }
 
 // Função para atualizar uma receita por ID (PATCH /api/receitas/[id])
+// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id = "" } = params;
+    const { id } = context.params; // Acessa params via context.params
     const body = await request.json();
 
     const dataToUpdate: { [key: string]: any } = {};
@@ -103,7 +105,7 @@ export async function PATCH(
           : null;
     if (body.alturaLente !== undefined)
       dataToUpdate.alturaLente =
-        typeof body.alturaLente === "number" ? body.alturaLente : null; // <-- NOVIDADE AQUI
+        typeof body.alturaLente === "number" ? body.alturaLente : null;
 
     const receitaAtualizada = await prisma.receita.update({
       where: { id },
@@ -137,12 +139,13 @@ export async function PATCH(
 }
 
 // Função para excluir uma receita por ID (DELETE /api/receitas/[id])
+// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id } = context.params;
 
     const receitaDeletada = await prisma.receita.delete({
       where: { id },

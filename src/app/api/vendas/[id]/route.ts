@@ -4,18 +4,18 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma"; // Importa a instância global do PrismaClient
 
 // Função para obter uma venda específica por ID (GET /api/vendas/[id])
+// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = params; // Pega o ID da URL dinâmica
+    const { id } = context.params; // Acessa params via context.params
 
     const venda = await prisma.venda.findUnique({
       where: { id },
       include: {
         cliente: {
-          // Inclui os dados do cliente
           select: {
             id: true,
             nome: true,
@@ -24,10 +24,8 @@ export async function GET(
           },
         },
         itens: {
-          // Inclui os itens da venda
           include: {
             produto: {
-              // Inclui os dados do produto dentro de cada item
               select: {
                 id: true,
                 nome: true,
@@ -58,12 +56,13 @@ export async function GET(
 }
 
 // Função para atualizar uma venda por ID (PATCH /api/vendas/[id])
+// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id } = context.params;
     const body = await request.json();
 
     const dataToUpdate: { [key: string]: any } = {};
@@ -72,8 +71,6 @@ export async function PATCH(
       dataToUpdate.statusPagamento = body.statusPagamento;
     if (body.observacoes !== undefined)
       dataToUpdate.observacoes = body.observacoes;
-    // Note: Não estamos permitindo alterar clienteId, dataVenda, valorTotal ou itens diretamente aqui
-    // Alterações em itens de venda exigem lógica complexa de estoque (incrementar/decrementar)
 
     const vendaAtualizada = await prisma.venda.update({
       where: { id },
@@ -97,33 +94,30 @@ export async function PATCH(
 }
 
 // Função para excluir uma venda por ID (DELETE /api/vendas/[id])
+// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id } = context.params;
 
-    // Usar uma transação para garantir que a exclusão da venda e a reversão do estoque sejam atômicas.
     const result = await prisma.$transaction(async (prismaTransaction) => {
-      // 1. Buscar os itens da venda antes de deletá-la
       const itensVenda = await prismaTransaction.itemVenda.findMany({
         where: { vendaId: id },
       });
 
-      // 2. Reverter o estoque para cada produto
       for (const item of itensVenda) {
         await prismaTransaction.produto.update({
           where: { id: item.produtoId },
           data: {
             quantidadeEmEstoque: {
-              increment: item.quantidade, // Incrementa a quantidade de volta ao estoque
+              increment: item.quantidade,
             },
           },
         });
       }
 
-      // 3. Deletar a venda (e seus itens, devido ao onDelete: Cascade na relação Venda -> ItemVenda)
       const vendaDeletada = await prismaTransaction.venda.delete({
         where: { id },
       });

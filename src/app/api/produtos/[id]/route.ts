@@ -1,14 +1,20 @@
-import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+// src/app/api/produtos/[id]/route.ts
 
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma"; // Importa a instância global do PrismaClient
+
+// Função para obter um produto específico por ID (GET /api/produtos/[id])
+// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id } = context.params; // Acessa params via context.params
 
-    const produto = await prisma.produto.findUnique({ where: { id } });
+    const produto = await prisma.produto.findUnique({
+      where: { id },
+    });
 
     if (!produto) {
       return NextResponse.json(
@@ -27,18 +33,17 @@ export async function GET(
   }
 }
 
+// Função para atualizar um produto por ID (PATCH /api/produtos/[id])
+// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id } = context.params; // Acessa params via context.params
     const body = await request.json();
 
-    // Tratamento para enums: passar null se string vazia para evitar erro Prisma
-    const sanitizeEnum = (value: any) =>
-      typeof value === "string" && value.trim() === "" ? null : value;
-
+    // Crie um novo objeto contendo apenas os campos válidos para atualização.
     const dataToUpdate: { [key: string]: any } = {};
 
     if (body.nome !== undefined) dataToUpdate.nome = body.nome;
@@ -51,11 +56,9 @@ export async function PATCH(
         typeof body.quantidadeEmEstoque === "number"
           ? body.quantidadeEmEstoque
           : 0;
-
     if (body.precoCusto !== undefined)
       dataToUpdate.precoCusto =
         typeof body.precoCusto === "number" ? body.precoCusto : null;
-
     if (body.precoVenda !== undefined)
       dataToUpdate.precoVenda =
         typeof body.precoVenda === "number" ? body.precoVenda : null;
@@ -65,13 +68,11 @@ export async function PATCH(
     if (body.descricao !== undefined) dataToUpdate.descricao = body.descricao;
     if (body.sku !== undefined) dataToUpdate.sku = body.sku;
 
-    // Enums tratados para não enviar string vazia
+    // Incluindo os novos campos de Lente de Grau
     if (body.tipoLenteGrau !== undefined)
-      dataToUpdate.tipoLenteGrau = sanitizeEnum(body.tipoLenteGrau);
-
+      dataToUpdate.tipoLenteGrau = body.tipoLenteGrau;
     if (body.materialLenteGrau !== undefined)
-      dataToUpdate.materialLenteGrau = sanitizeEnum(body.materialLenteGrau);
-
+      dataToUpdate.materialLenteGrau = body.materialLenteGrau;
     if (body.tratamentosLenteGrau !== undefined)
       dataToUpdate.tratamentosLenteGrau = Array.isArray(
         body.tratamentosLenteGrau
@@ -108,10 +109,10 @@ export async function PATCH(
     if (body.grauAdicaoOE !== undefined)
       dataToUpdate.grauAdicaoOE =
         typeof body.grauAdicaoOE === "number" ? body.grauAdicaoOE : null;
-
     if (body.fabricanteLaboratorio !== undefined)
       dataToUpdate.fabricanteLaboratorio = body.fabricanteLaboratorio;
 
+    // Incluindo os novos campos de Lente de Contato
     if (body.curvaBaseLenteContato !== undefined)
       dataToUpdate.curvaBaseLenteContato = body.curvaBaseLenteContato;
     if (body.diametroLenteContato !== undefined)
@@ -124,12 +125,8 @@ export async function PATCH(
         typeof body.poderLenteContato === "number"
           ? body.poderLenteContato
           : null;
-
     if (body.tipoDescarteLenteContato !== undefined)
-      dataToUpdate.tipoDescarteLenteContato = sanitizeEnum(
-        body.tipoDescarteLenteContato
-      );
-
+      dataToUpdate.tipoDescarteLenteContato = body.tipoDescarteLenteContato;
     if (body.solucoesLenteContato !== undefined)
       dataToUpdate.solucoesLenteContato = body.solucoesLenteContato;
 
@@ -160,12 +157,14 @@ export async function PATCH(
   }
 }
 
+// Função para excluir um produto por ID (DELETE /api/produtos/[id])
+// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id } = context.params;
 
     const produtoDeletado = await prisma.produto.delete({
       where: { id },

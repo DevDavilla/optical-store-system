@@ -1,21 +1,21 @@
-// src/app/api/agendamentos/[id]/route.ts
+// src/app/agendamentos/[id]/route.ts
 
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma"; // Importa a instância global do PrismaClient
+import prisma from "@/lib/prisma";
 
 // Função para obter um agendamento específico por ID (GET /api/agendamentos/[id])
+// CORREÇÃO AQUI: Remove a tipagem explícita do segundo argumento para evitar conflito
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = params; // Pega o ID da URL dinâmica
+    const { id } = context.params; // Acessa params via context.params
 
     const agendamento = await prisma.agendamento.findUnique({
       where: { id },
       include: {
         cliente: {
-          // Inclui os dados do cliente relacionado
           select: {
             id: true,
             nome: true,
@@ -44,15 +44,15 @@ export async function GET(
 }
 
 // Função para atualizar um agendamento por ID (PATCH /api/agendamentos/[id])
+// CORREÇÃO AQUI: Remove a tipagem explícita do segundo argumento
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id } = context.params; // Acessa params via context.params
     const body = await request.json();
 
-    // Crie um novo objeto contendo apenas os campos válidos para atualização.
     const dataToUpdate: { [key: string]: any } = {};
 
     if (body.dataAgendamento !== undefined) {
@@ -77,8 +77,6 @@ export async function PATCH(
       dataToUpdate.observacoes = body.observacoes;
     if (body.status !== undefined) dataToUpdate.status = body.status;
 
-    // Note: clienteId não deve ser alterado via PATCH/PUT direto no agendamento.
-
     const agendamentoAtualizado = await prisma.agendamento.update({
       where: { id },
       data: dataToUpdate,
@@ -100,13 +98,12 @@ export async function PATCH(
   }
 }
 
-// Função para excluir um agendamento por ID (DELETE /api/agendamentos/[id])
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id } = context.params;
 
     const agendamentoDeletado = await prisma.agendamento.delete({
       where: { id },
@@ -122,7 +119,6 @@ export async function DELETE(
   } catch (error: any) {
     console.error("Erro ao excluir agendamento:", error);
     if (error.code === "P2025") {
-      // Prisma error code for record not found
       return NextResponse.json(
         { message: "Agendamento não encontrado para exclusão." },
         { status: 404 }
