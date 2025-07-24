@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { RouteContext } from "next"; // ✅ Import correto exigido pelo build
 import prisma from "@/lib/prisma";
 
 // Função para obter uma venda específica por ID (GET /api/vendas/[id])
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = context.params;
 
     const venda = await prisma.venda.findUnique({
       where: { id },
@@ -52,13 +50,10 @@ export async function GET(
   }
 }
 
-// Função para atualizar uma venda por ID (PATCH /api/vendas/[id])
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// PATCH
+export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = context.params;
     const body = await request.json();
 
     const dataToUpdate: { [key: string]: any } = {};
@@ -89,13 +84,10 @@ export async function PATCH(
   }
 }
 
-// Função para excluir uma venda por ID (DELETE /api/vendas/[id])
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// DELETE
+export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = context.params;
 
     const result = await prisma.$transaction(async (prismaTransaction) => {
       const itensVenda = await prismaTransaction.itemVenda.findMany({
