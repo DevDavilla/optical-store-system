@@ -1,4 +1,3 @@
-// src/app/agendamentos/page.tsx
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -7,8 +6,8 @@ import AgendamentoTable from "@/components/AgendamentoTable";
 import Notification from "@/components/Notification";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion"; // Importa motion para animações
-import ConfirmationModal from "@/components/ConfirmationModal"; // Importa ConfirmationModal
+import { motion } from "framer-motion";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 // Interfaces (idealmente em um arquivo de tipos global)
 interface ClienteSimples {
@@ -32,14 +31,13 @@ interface Agendamento {
 }
 
 export default function AgendamentosPage() {
-  const { currentUser, loadingAuth, userRole } = useAuth();
+  const { currentUser, loadingAuth } = useAuth(); // userRole removido
   const router = useRouter();
 
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [clientes, setClientes] = useState<ClienteSimples[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingAgendamentoId, setEditingAgendamentoId] = useState<
@@ -47,14 +45,11 @@ export default function AgendamentosPage() {
   >(null);
   const [agendamentoToEdit, setAgendamentoToEdit] =
     useState<Partial<Agendamento> | null>(null);
-
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error";
   } | null>(null);
-
   const [searchTerm, setSearchTerm] = useState("");
-
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     id: string;
@@ -142,7 +137,7 @@ export default function AgendamentosPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        await response.json(); // Removido errorData
         throw new Error(`Erro HTTP! Status: ${response.status}`);
       }
 
@@ -155,21 +150,17 @@ export default function AgendamentosPage() {
         } com sucesso!`,
         type: "success",
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Falha ao salvar agendamento:", err);
-      setFormError(
-        err.message || "Erro ao salvar agendamento. Tente novamente."
-      );
-      setNotification({
-        message: err.message || "Erro ao salvar agendamento.",
-        type: "error",
-      });
+      const message =
+        err instanceof Error ? err.message : "Erro ao salvar agendamento.";
+      setFormError(message);
+      setNotification({ message, type: "error" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // --- NOVIDADE AQUI: Lógica de exclusão com modal de confirmação ---
   const handleDelete = async (id: string) => {
     const agendamentoParaExcluir = agendamentos.find((a) => a.id === id);
     const identificador = agendamentoParaExcluir
@@ -181,14 +172,14 @@ export default function AgendamentosPage() {
     setConfirmModal({
       isOpen: true,
       id: id,
-      nome: identificador, // Usando o identificador no modal
+      nome: identificador,
       onConfirm: async () => {
         try {
           const response = await fetch(`/api/agendamentos/${id}`, {
             method: "DELETE",
           });
           if (!response.ok) {
-            const errorData = await response.json();
+            await response.json(); // Removido errorData
             throw new Error(`Erro HTTP! Status: ${response.status}`);
           }
           setNotification({
@@ -196,21 +187,20 @@ export default function AgendamentosPage() {
             type: "success",
           });
           await fetchAgendamentos();
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error("Falha ao excluir agendamento:", err);
-          setNotification({
-            message: err.message || "Erro ao excluir agendamento.",
-            type: "error",
-          });
+          const message =
+            err instanceof Error ? err.message : "Erro ao excluir agendamento.";
+          setNotification({ message, type: "error" });
         } finally {
-          setConfirmModal(null); // Fecha o modal após a ação
+          setConfirmModal(null);
         }
       },
     });
   };
 
   const handleCancelDelete = () => {
-    setConfirmModal(null); // Fecha o modal ao cancelar
+    setConfirmModal(null);
   };
 
   const handleEdit = (agendamento: Agendamento) => {
@@ -228,38 +218,25 @@ export default function AgendamentosPage() {
   };
 
   const filteredAgendamentos = useMemo(() => {
-    if (!searchTerm) {
-      return agendamentos;
-    }
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    if (!searchTerm) return agendamentos;
+    const lower = searchTerm.toLowerCase();
     return agendamentos.filter(
-      (agendamento) =>
-        (agendamento.cliente?.nome &&
-          agendamento.cliente.nome
-            .toLowerCase()
-            .includes(lowerCaseSearchTerm)) ||
-        (agendamento.dataAgendamento &&
-          agendamento.dataAgendamento.includes(lowerCaseSearchTerm)) ||
-        (agendamento.horaAgendamento &&
-          agendamento.horaAgendamento.includes(lowerCaseSearchTerm)) ||
-        (agendamento.tipoAgendamento &&
-          agendamento.tipoAgendamento
-            .toLowerCase()
-            .includes(lowerCaseSearchTerm)) ||
-        (agendamento.status &&
-          agendamento.status.toLowerCase().includes(lowerCaseSearchTerm)) ||
-        (agendamento.observacoes &&
-          agendamento.observacoes.toLowerCase().includes(lowerCaseSearchTerm))
+      (a) =>
+        (a.cliente?.nome && a.cliente.nome.toLowerCase().includes(lower)) ||
+        (a.dataAgendamento && a.dataAgendamento.includes(lower)) ||
+        (a.horaAgendamento && a.horaAgendamento.includes(lower)) ||
+        (a.tipoAgendamento &&
+          a.tipoAgendamento.toLowerCase().includes(lower)) ||
+        (a.status && a.status.toLowerCase().includes(lower)) ||
+        (a.observacoes && a.observacoes.toLowerCase().includes(lower))
     );
   }, [agendamentos, searchTerm]);
 
-  // Framer Motion variants para animação de entrada
   const pageVariants = {
     hidden: { opacity: 0, y: 30 },
     show: { opacity: 1, y: 0, transition: { duration: 0.6 } },
   };
 
-  // --- TELAS DE CARREGAMENTO E ERRO PADRONIZADAS ---
   if (loadingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
@@ -278,9 +255,7 @@ export default function AgendamentosPage() {
     );
   }
 
-  if (!currentUser) {
-    return null;
-  }
+  if (!currentUser) return null;
 
   if (loading) {
     return (
@@ -314,6 +289,7 @@ export default function AgendamentosPage() {
           </h1>
           <p className="text-gray-600">{error}</p>
           <button
+            type="button"
             onClick={fetchAgendamentos}
             className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-sm"
           >
@@ -324,7 +300,6 @@ export default function AgendamentosPage() {
     );
   }
 
-  // Renderiza o conteúdo da página apenas se o usuário estiver logado e os dados carregados
   return (
     <motion.div
       className="container mx-auto p-8 pt-16"
