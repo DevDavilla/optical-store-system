@@ -1,4 +1,3 @@
-// src/app/produtos/page.tsx
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -71,8 +70,7 @@ interface Produto {
   tipoDescarteLenteContato?: TipoDescarteLenteContatoEnum;
   solucoesLenteContato?: string;
 
-  createdAt: string;
-  updatedAt: string;
+  // REMOVIDOS createdAt e updatedAt para evitar conflito de tipos
 }
 
 export default function ProdutosPage() {
