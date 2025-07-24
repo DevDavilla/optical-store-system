@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
+export async function GET(request: NextRequest) {
+  // A forma correta de pegar params é pelo URL
+  const { searchParams, pathname } = new URL(request.url);
+
+  // A forma mais direta para pegar o "id" da rota dinâmica:
+  // Como sua rota é /api/agendamentos/[id]
+  // Você pode extrair o id assim:
+  const parts = pathname.split("/");
+  const id = parts[parts.length - 1]; // pega o último segmento da URL
 
   if (!id) {
-    return NextResponse.json({ message: "ID é obrigatório" }, { status: 400 });
+    return NextResponse.json({ message: "ID obrigatório" }, { status: 400 });
   }
 
   try {
@@ -43,14 +47,15 @@ export async function GET(
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
+// Faça o mesmo para PATCH e DELETE
+
+export async function PATCH(request: NextRequest) {
+  const { pathname } = new URL(request.url);
+  const parts = pathname.split("/");
+  const id = parts[parts.length - 1];
 
   if (!id) {
-    return NextResponse.json({ message: "ID é obrigatório" }, { status: 400 });
+    return NextResponse.json({ message: "ID obrigatório" }, { status: 400 });
   }
 
   try {
@@ -62,8 +67,6 @@ export async function PATCH(
       if (body.dataAgendamento === null || body.dataAgendamento === "") {
         dataToUpdate.dataAgendamento = null;
       } else {
-        // Você pode testar salvar como string ISO ou Date
-        // Se prisma espera Date, mantenha assim
         const parsedDate = new Date(body.dataAgendamento);
         if (isNaN(parsedDate.getTime())) {
           return NextResponse.json(
@@ -103,14 +106,13 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
+export async function DELETE(request: NextRequest) {
+  const { pathname } = new URL(request.url);
+  const parts = pathname.split("/");
+  const id = parts[parts.length - 1];
 
   if (!id) {
-    return NextResponse.json({ message: "ID é obrigatório" }, { status: 400 });
+    return NextResponse.json({ message: "ID obrigatório" }, { status: 400 });
   }
 
   try {
