@@ -1,15 +1,13 @@
 // src/app/api/receitas/[id]/route.ts
 
-import { NextRequest, NextResponse } from "next/server"; // Importe NextRequest
-import prisma from "@/lib/prisma"; // Importa a instância global do PrismaClient
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { type RouteContext } from "next/dist/server/web/types";
 
-// Função para obter uma receita específica por ID (GET /api/receitas/[id])
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// GET /api/receitas/[id]
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = context.params;
 
     const receita = await prisma.receita.findUnique({
       where: { id },
@@ -40,13 +38,10 @@ export async function GET(
   }
 }
 
-// Função para atualizar uma receita por ID (PATCH /api/receitas/[id])
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// PATCH /api/receitas/[id]
+export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = context.params;
     const body = await request.json();
 
     const dataToUpdate: { [key: string]: any } = {};
@@ -65,6 +60,7 @@ export async function PATCH(
         dataToUpdate.dataReceita = parsedDate;
       }
     }
+
     if (body.observacoes !== undefined)
       dataToUpdate.observacoes = body.observacoes;
     if (body.odEsferico !== undefined)
@@ -136,13 +132,10 @@ export async function PATCH(
   }
 }
 
-// Função para excluir uma receita por ID (DELETE /api/receitas/[id])
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// DELETE /api/receitas/[id]
+export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = context.params;
 
     const receitaDeletada = await prisma.receita.delete({
       where: { id },
