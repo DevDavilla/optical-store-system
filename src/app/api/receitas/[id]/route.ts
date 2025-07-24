@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-interface RouteContext {
-  params: { id: string };
-}
-
 // GET /api/receitas/[id]
-export async function GET(request: Request, context: RouteContext) {
+export async function GET(request: Request, context: any) {
   try {
     const { id } = context.params;
 
@@ -40,7 +36,7 @@ export async function GET(request: Request, context: RouteContext) {
 }
 
 // PATCH /api/receitas/[id]
-export async function PATCH(request: Request, context: RouteContext) {
+export async function PATCH(request: Request, context: any) {
   try {
     const { id } = context.params;
     const body = await request.json();
@@ -134,7 +130,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 // DELETE /api/receitas/[id]
-export async function DELETE(request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: any) {
   try {
     const { id } = context.params;
 

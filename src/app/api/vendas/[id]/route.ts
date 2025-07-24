@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-interface RouteContext {
-  params: { id: string };
-}
-
-// Função para obter uma venda específica por ID (GET /api/vendas/[id])
-export async function GET(request: Request, context: RouteContext) {
+// GET /api/vendas/[id]
+export async function GET(request: Request, context: any) {
   try {
     const { id } = context.params;
 
@@ -53,8 +49,8 @@ export async function GET(request: Request, context: RouteContext) {
   }
 }
 
-// PATCH
-export async function PATCH(request: Request, context: RouteContext) {
+// PATCH /api/vendas/[id]
+export async function PATCH(request: Request, context: any) {
   try {
     const { id } = context.params;
     const body = await request.json();
@@ -87,8 +83,8 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-// DELETE
-export async function DELETE(request: Request, context: RouteContext) {
+// DELETE /api/vendas/[id]
+export async function DELETE(request: Request, context: any) {
   try {
     const { id } = context.params;
 
