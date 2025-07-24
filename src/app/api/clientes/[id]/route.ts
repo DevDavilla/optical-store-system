@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-// Função para obter um cliente específico por ID (GET /api/clientes/[id])
+// GET: Buscar cliente por ID
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
-
     const cliente = await prisma.cliente.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
         receitas: {
           orderBy: {
@@ -37,30 +35,34 @@ export async function GET(
   }
 }
 
-// Função para excluir um cliente por ID (DELETE /api/clientes/[id])
+// DELETE: Excluir cliente por ID
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
-
     const clienteDeletado = await prisma.cliente.delete({
-      where: { id },
+      where: { id: params.id },
     });
 
     return NextResponse.json(
       { message: "Cliente excluído com sucesso!", cliente: clienteDeletado },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error("Erro ao excluir cliente:", error);
-    if (error.code === "P2025") {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "P2025"
+    ) {
       return NextResponse.json(
         { message: "Cliente não encontrado para exclusão." },
         { status: 404 }
       );
     }
+
     return NextResponse.json(
       { message: "Erro interno do servidor ao excluir cliente" },
       { status: 500 }
@@ -68,15 +70,13 @@ export async function DELETE(
   }
 }
 
-// Função para atualizar um cliente por ID (PATCH /api/clientes/[id])
+// PATCH: Atualizar cliente por ID
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
     const body = await request.json();
-
     const dataToUpdate: { [key: string]: any } = {};
 
     if (body.nome !== undefined) dataToUpdate.nome = body.nome;
@@ -85,11 +85,8 @@ export async function PATCH(
     if (body.cpf !== undefined) dataToUpdate.cpf = body.cpf;
     if (body.rg !== undefined) dataToUpdate.rg = body.rg;
     if (body.dataNascimento !== undefined) {
-      if (body.dataNascimento === "") {
-        dataToUpdate.dataNascimento = null;
-      } else {
-        dataToUpdate.dataNascimento = new Date(body.dataNascimento);
-      }
+      dataToUpdate.dataNascimento =
+        body.dataNascimento === "" ? null : new Date(body.dataNascimento);
     }
     if (body.endereco !== undefined) dataToUpdate.endereco = body.endereco;
     if (body.cidade !== undefined) dataToUpdate.cidade = body.cidade;
@@ -99,25 +96,28 @@ export async function PATCH(
       dataToUpdate.observacoes = body.observacoes;
 
     const clienteAtualizado = await prisma.cliente.update({
-      where: { id },
+      where: { id: params.id },
       data: dataToUpdate,
     });
 
     return NextResponse.json(clienteAtualizado, { status: 200 });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Erro ao atualizar cliente:", error);
-    if (error.code === "P2025") {
-      return NextResponse.json(
-        { message: "Cliente não encontrado para atualização." },
-        { status: 404 }
-      );
+    if (typeof error === "object" && error !== null && "code" in error) {
+      if (error.code === "P2025") {
+        return NextResponse.json(
+          { message: "Cliente não encontrado para atualização." },
+          { status: 404 }
+        );
+      }
+      if (error.code === "P2002") {
+        return NextResponse.json(
+          { message: "Email ou CPF já cadastrado para outro cliente." },
+          { status: 409 }
+        );
+      }
     }
-    if (error.code === "P2002") {
-      return NextResponse.json(
-        { message: "Email ou CPF já cadastrado para outro cliente." },
-        { status: 409 }
-      );
-    }
+
     return NextResponse.json(
       { message: "Erro interno do servidor ao atualizar cliente" },
       { status: 500 }
