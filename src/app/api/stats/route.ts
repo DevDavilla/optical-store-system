@@ -3,6 +3,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma"; // Importa a instância global do PrismaClient
 
+console.log("DATABASE_URL lida pelo Next.js:", process.env.DATABASE_URL);
+
 export async function GET() {
   try {
     // Conta o total de clientes
