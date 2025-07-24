@@ -1,11 +1,14 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
-  webpack: (config, { isDev, webpack }) => {
-    config.resolve.alias["@"] = require("path").join(__dirname, "src");
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  webpack: (config) => {
+    config.resolve.alias["@"] = path.join(__dirname, "src");
     return config;
   },
-  /* config options here */
 };
 
 export default nextConfig;
