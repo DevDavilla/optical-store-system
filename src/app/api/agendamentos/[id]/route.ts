@@ -1,15 +1,15 @@
 // src/app/api/agendamentos/[id]/route.ts
 
-import { NextRequest, NextResponse } from "next/server"; // Importe NextRequest
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 // Função para obter um agendamento específico por ID (GET /api/agendamentos/[id])
 export async function GET(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params; // Acessa params diretamente
+    const { id } = params;
 
     const agendamento = await prisma.agendamento.findUnique({
       where: { id },
@@ -44,7 +44,7 @@ export async function GET(
 
 // Função para atualizar um agendamento por ID (PATCH /api/agendamentos/[id])
 export async function PATCH(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -98,7 +98,7 @@ export async function PATCH(
 
 // Função para excluir um agendamento por ID (DELETE /api/agendamentos/[id])
 export async function DELETE(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
