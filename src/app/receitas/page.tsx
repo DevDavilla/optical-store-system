@@ -1,4 +1,3 @@
-// src/app/receitas/page.tsx
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -60,11 +59,11 @@ export default function ReceitasPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
 
-  // --- NOVIDADE AQUI: Estado para o modal de confirmação ---
+  // Corrigido: Adicionado `nome` ao estado confirmModal
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     id: string;
-    // nome: string; // Receita não tem nome, então podemos usar o ID ou outro identificador
+    nome: string;
     onConfirm: () => void;
   } | null>(null);
 
@@ -129,7 +128,7 @@ export default function ReceitasPage() {
         : "/api/receitas";
 
       const response = await fetch(url, {
-        method: method,
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
@@ -165,8 +164,8 @@ export default function ReceitasPage() {
   const handleDelete = async (id: string) => {
     setConfirmModal({
       isOpen: true,
-      id: id,
-      nome: `Receita ${id.substring(0, 8)}...`, // Usa parte do ID como identificador no modal
+      id,
+      nome: `Receita ${id.substring(0, 8)}...`, // Identificador para mostrar no modal
       onConfirm: async () => {
         try {
           const response = await fetch(`/api/receitas/${id}`, {
@@ -190,14 +189,14 @@ export default function ReceitasPage() {
             type: "error",
           });
         } finally {
-          setConfirmModal(null); // Fecha o modal após a ação
+          setConfirmModal(null);
         }
       },
     });
   };
 
   const handleCancelDelete = () => {
-    setConfirmModal(null); // Fecha o modal ao cancelar
+    setConfirmModal(null);
   };
 
   const handleEdit = (receita: Receita) => {
@@ -215,10 +214,10 @@ export default function ReceitasPage() {
   };
 
   const filteredReceitas = useMemo(() => {
-    if (!searchTerm) {
-      return receitas;
-    }
+    if (!searchTerm) return receitas;
+
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
+
     return receitas.filter(
       (receita) =>
         (receita.cliente?.nome &&
@@ -234,13 +233,11 @@ export default function ReceitasPage() {
     );
   }, [receitas, searchTerm]);
 
-  // Framer Motion variants para animação de entrada
   const pageVariants = {
     hidden: { opacity: 0, y: 30 },
     show: { opacity: 1, y: 0, transition: { duration: 0.6 } },
   };
 
-  // --- TELAS DE CARREGAMENTO E ERRO PADRONIZADAS ---
   if (loadingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7f7fa] via-white to-[#f7f7fa] p-4 pt-16">
@@ -259,9 +256,7 @@ export default function ReceitasPage() {
     );
   }
 
-  if (!currentUser) {
-    return null;
-  }
+  if (!currentUser) return null;
 
   if (loading) {
     return (
@@ -305,7 +300,6 @@ export default function ReceitasPage() {
     );
   }
 
-  // Renderiza o conteúdo da página apenas se o usuário estiver logado e os dados carregados
   return (
     <motion.div
       className="container mx-auto p-8 pt-16"
