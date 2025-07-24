@@ -1,8 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import type { RequestContext } from "next/dist/server/app-route/module";
 
-export async function GET(request: Request, context: RequestContext) {
+type RouteContext = {
+  params: { id: string };
+};
+
+export async function GET(request: NextRequest, context: RouteContext) {
   const { id } = context.params;
 
   try {
@@ -37,7 +40,7 @@ export async function GET(request: Request, context: RequestContext) {
   }
 }
 
-export async function PATCH(request: Request, context: RequestContext) {
+export async function PATCH(request: NextRequest, context: RouteContext) {
   const { id } = context.params;
 
   try {
@@ -88,7 +91,7 @@ export async function PATCH(request: Request, context: RequestContext) {
   }
 }
 
-export async function DELETE(request: Request, context: RequestContext) {
+export async function DELETE(request: NextRequest, context: RouteContext) {
   const { id } = context.params;
 
   try {
