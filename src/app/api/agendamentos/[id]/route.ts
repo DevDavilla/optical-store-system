@@ -1,16 +1,15 @@
-// src/app/agendamentos/[id]/route.ts
+// src/app/api/agendamentos/[id]/route.ts
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server"; // Importe NextRequest
 import prisma from "@/lib/prisma";
 
 // Função para obter um agendamento específico por ID (GET /api/agendamentos/[id])
-// CORREÇÃO AQUI: Remove a tipagem explícita do segundo argumento para evitar conflito
 export async function GET(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params; // Acessa params via context.params
+    const { id } = params; // Acessa params diretamente
 
     const agendamento = await prisma.agendamento.findUnique({
       where: { id },
@@ -44,13 +43,12 @@ export async function GET(
 }
 
 // Função para atualizar um agendamento por ID (PATCH /api/agendamentos/[id])
-// CORREÇÃO AQUI: Remove a tipagem explícita do segundo argumento
 export async function PATCH(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params; // Acessa params via context.params
+    const { id } = params;
     const body = await request.json();
 
     const dataToUpdate: { [key: string]: any } = {};
@@ -98,12 +96,13 @@ export async function PATCH(
   }
 }
 
+// Função para excluir um agendamento por ID (DELETE /api/agendamentos/[id])
 export async function DELETE(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params;
+    const { id } = params;
 
     const agendamentoDeletado = await prisma.agendamento.delete({
       where: { id },

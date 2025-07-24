@@ -1,16 +1,15 @@
 // src/app/api/produtos/[id]/route.ts
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server"; // Importe NextRequest
 import prisma from "@/lib/prisma"; // Importa a instância global do PrismaClient
 
 // Função para obter um produto específico por ID (GET /api/produtos/[id])
-// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function GET(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params; // Acessa params via context.params
+    const { id } = params;
 
     const produto = await prisma.produto.findUnique({
       where: { id },
@@ -34,16 +33,14 @@ export async function GET(
 }
 
 // Função para atualizar um produto por ID (PATCH /api/produtos/[id])
-// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function PATCH(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params; // Acessa params via context.params
+    const { id } = params;
     const body = await request.json();
 
-    // Crie um novo objeto contendo apenas os campos válidos para atualização.
     const dataToUpdate: { [key: string]: any } = {};
 
     if (body.nome !== undefined) dataToUpdate.nome = body.nome;
@@ -68,7 +65,6 @@ export async function PATCH(
     if (body.descricao !== undefined) dataToUpdate.descricao = body.descricao;
     if (body.sku !== undefined) dataToUpdate.sku = body.sku;
 
-    // Incluindo os novos campos de Lente de Grau
     if (body.tipoLenteGrau !== undefined)
       dataToUpdate.tipoLenteGrau = body.tipoLenteGrau;
     if (body.materialLenteGrau !== undefined)
@@ -112,7 +108,6 @@ export async function PATCH(
     if (body.fabricanteLaboratorio !== undefined)
       dataToUpdate.fabricanteLaboratorio = body.fabricanteLaboratorio;
 
-    // Incluindo os novos campos de Lente de Contato
     if (body.curvaBaseLenteContato !== undefined)
       dataToUpdate.curvaBaseLenteContato = body.curvaBaseLenteContato;
     if (body.diametroLenteContato !== undefined)
@@ -158,13 +153,12 @@ export async function PATCH(
 }
 
 // Função para excluir um produto por ID (DELETE /api/produtos/[id])
-// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function DELETE(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params;
+    const { id } = params;
 
     const produtoDeletado = await prisma.produto.delete({
       where: { id },

@@ -1,16 +1,15 @@
 // src/app/api/clientes/[id]/route.ts
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server"; // Importe NextRequest
 import prisma from "@/lib/prisma"; // Importa a instância global do PrismaClient
 
 // Função para obter um cliente específico por ID (GET /api/clientes/[id])
-// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function GET(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params; // Acessa params via context.params
+    const { id } = params; // Acessa params diretamente
 
     const cliente = await prisma.cliente.findUnique({
       where: { id },
@@ -41,13 +40,12 @@ export async function GET(
 }
 
 // Função para excluir um cliente por ID (DELETE /api/clientes/[id])
-// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function DELETE(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params; // Acessa params via context.params
+    const { id } = params;
 
     const clienteDeletado = await prisma.cliente.delete({
       where: { id },
@@ -60,7 +58,6 @@ export async function DELETE(
   } catch (error: any) {
     console.error("Erro ao excluir cliente:", error);
     if (error.code === "P2025") {
-      // Prisma error code for record not found
       return NextResponse.json(
         { message: "Cliente não encontrado para exclusão." },
         { status: 404 }
@@ -74,16 +71,14 @@ export async function DELETE(
 }
 
 // Função para atualizar um cliente por ID (PATCH /api/clientes/[id])
-// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function PATCH(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params; // Acessa params via context.params
+    const { id } = params;
     const body = await request.json();
 
-    // Crie um novo objeto para 'dataToUpdate' contendo apenas os campos que podem ser atualizados.
     const dataToUpdate: { [key: string]: any } = {};
 
     if (body.nome !== undefined) dataToUpdate.nome = body.nome;

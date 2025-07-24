@@ -1,16 +1,15 @@
 // src/app/api/receitas/[id]/route.ts
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server"; // Importe NextRequest
 import prisma from "@/lib/prisma"; // Importa a instância global do PrismaClient
 
 // Função para obter uma receita específica por ID (GET /api/receitas/[id])
-// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function GET(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params; // Acessa params via context.params
+    const { id } = params;
 
     const receita = await prisma.receita.findUnique({
       where: { id },
@@ -42,13 +41,12 @@ export async function GET(
 }
 
 // Função para atualizar uma receita por ID (PATCH /api/receitas/[id])
-// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function PATCH(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params; // Acessa params via context.params
+    const { id } = params;
     const body = await request.json();
 
     const dataToUpdate: { [key: string]: any } = {};
@@ -139,13 +137,12 @@ export async function PATCH(
 }
 
 // Função para excluir uma receita por ID (DELETE /api/receitas/[id])
-// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function DELETE(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params;
+    const { id } = params;
 
     const receitaDeletada = await prisma.receita.delete({
       where: { id },

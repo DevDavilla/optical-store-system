@@ -1,16 +1,15 @@
 // src/app/api/vendas/[id]/route.ts
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server"; // Importe NextRequest
 import prisma from "@/lib/prisma"; // Importa a instância global do PrismaClient
 
 // Função para obter uma venda específica por ID (GET /api/vendas/[id])
-// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function GET(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params; // Acessa params via context.params
+    const { id } = params;
 
     const venda = await prisma.venda.findUnique({
       where: { id },
@@ -56,13 +55,12 @@ export async function GET(
 }
 
 // Função para atualizar uma venda por ID (PATCH /api/vendas/[id])
-// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function PATCH(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params;
+    const { id } = params;
     const body = await request.json();
 
     const dataToUpdate: { [key: string]: any } = {};
@@ -94,13 +92,12 @@ export async function PATCH(
 }
 
 // Função para excluir uma venda por ID (DELETE /api/vendas/[id])
-// CORREÇÃO AQUI: Assinatura da função ajustada para 'context'
 export async function DELETE(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params;
+    const { id } = params;
 
     const result = await prisma.$transaction(async (prismaTransaction) => {
       const itensVenda = await prismaTransaction.itemVenda.findMany({
