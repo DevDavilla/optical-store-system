@@ -1,18 +1,17 @@
+// src/app/api/produtos/[id]/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-type Context = {
-  params: { id: string };
-};
-
-// GET
-export async function GET(request: NextRequest, context: Context) {
+// GET /api/produtos/[id]
+export async function GET(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
   try {
     const { id } = context.params;
 
-    const produto = await prisma.produto.findUnique({
-      where: { id },
-    });
+    const produto = await prisma.produto.findUnique({ where: { id } });
 
     if (!produto) {
       return NextResponse.json(
@@ -31,18 +30,22 @@ export async function GET(request: NextRequest, context: Context) {
   }
 }
 
-// PATCH
-export async function PATCH(request: NextRequest, context: Context) {
+// PATCH /api/produtos/[id]
+export async function PATCH(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
   try {
     const { id } = context.params;
     const body = await request.json();
 
     const dataToUpdate: { [key: string]: any } = {};
-    // ... (mesmo corpo que você já tinha)
+
     if (body.nome !== undefined) dataToUpdate.nome = body.nome;
     if (body.tipo !== undefined) dataToUpdate.tipo = body.tipo;
     if (body.marca !== undefined) dataToUpdate.marca = body.marca;
     if (body.modelo !== undefined) dataToUpdate.modelo = body.modelo;
+
     if (body.quantidadeEmEstoque !== undefined)
       dataToUpdate.quantidadeEmEstoque =
         typeof body.quantidadeEmEstoque === "number"
@@ -54,10 +57,12 @@ export async function PATCH(request: NextRequest, context: Context) {
     if (body.precoVenda !== undefined)
       dataToUpdate.precoVenda =
         typeof body.precoVenda === "number" ? body.precoVenda : null;
+
     if (body.fornecedor !== undefined)
       dataToUpdate.fornecedor = body.fornecedor;
     if (body.descricao !== undefined) dataToUpdate.descricao = body.descricao;
     if (body.sku !== undefined) dataToUpdate.sku = body.sku;
+
     if (body.tipoLenteGrau !== undefined)
       dataToUpdate.tipoLenteGrau = body.tipoLenteGrau;
     if (body.materialLenteGrau !== undefined)
@@ -98,7 +103,6 @@ export async function PATCH(request: NextRequest, context: Context) {
     if (body.grauAdicaoOE !== undefined)
       dataToUpdate.grauAdicaoOE =
         typeof body.grauAdicaoOE === "number" ? body.grauAdicaoOE : null;
-
     if (body.fabricanteLaboratorio !== undefined)
       dataToUpdate.fabricanteLaboratorio = body.fabricanteLaboratorio;
 
@@ -146,14 +150,15 @@ export async function PATCH(request: NextRequest, context: Context) {
   }
 }
 
-// DELETE
-export async function DELETE(request: NextRequest, context: Context) {
+// DELETE /api/produtos/[id]
+export async function DELETE(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
   try {
     const { id } = context.params;
 
-    const produtoDeletado = await prisma.produto.delete({
-      where: { id },
-    });
+    const produtoDeletado = await prisma.produto.delete({ where: { id } });
 
     return NextResponse.json(
       { message: "Produto excluído com sucesso!", produto: produtoDeletado },
