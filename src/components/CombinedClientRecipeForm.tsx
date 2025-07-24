@@ -91,7 +91,6 @@ export default function CombinedClientRecipeForm({
     endereco: "",
     cidade: "",
     estado: "",
-    cidade: "",
     cep: "",
     observacoes: "",
   });

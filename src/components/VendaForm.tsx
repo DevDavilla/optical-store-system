@@ -7,6 +7,8 @@ import React, { useState, useEffect, useMemo } from "react"; // Adicionado useMe
 interface ClienteSimples {
   id: string;
   nome: string;
+  telefone?: string;
+  email?: string;
 }
 
 interface ProdutoSimples {
@@ -22,6 +24,7 @@ interface ItemVendaForm {
   produtoId: string;
   quantidade: number;
   precoUnitario: number; // Preço no momento da adição ao item
+  subtotal?: number;
   produtoNome?: string; // Para exibir no formulário
   produtoEstoque?: number; // Para exibir estoque disponível
   produtoSku?: string; // Para exibir SKU

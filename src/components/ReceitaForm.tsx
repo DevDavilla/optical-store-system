@@ -8,6 +8,8 @@ import { Plus, Save, XCircle } from "lucide-react"; // Importa ícones para os b
 interface ClienteSimples {
   id: string;
   nome: string;
+  telefone?: string;
+  email?: string;
 }
 
 interface Receita {
