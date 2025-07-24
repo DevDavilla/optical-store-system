@@ -1,18 +1,11 @@
-// src/app/api/agendamentos/[id]/route.ts
-
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import type { RequestContext } from "next/dist/server/app-route/module";
 
-type Params = {
-  params: {
-    id: string;
-  };
-};
+export async function GET(request: Request, context: RequestContext) {
+  const { id } = context.params;
 
-export async function GET(request: Request, { params }: Params) {
   try {
-    const { id } = params;
-
     const agendamento = await prisma.agendamento.findUnique({
       where: { id },
       include: {
@@ -44,9 +37,10 @@ export async function GET(request: Request, { params }: Params) {
   }
 }
 
-export async function PATCH(request: Request, { params }: Params) {
+export async function PATCH(request: Request, context: RequestContext) {
+  const { id } = context.params;
+
   try {
-    const { id } = params;
     const body = await request.json();
 
     const dataToUpdate: { [key: string]: any } = {};
@@ -94,10 +88,10 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(request: Request, { params }: Params) {
-  try {
-    const { id } = params;
+export async function DELETE(request: Request, context: RequestContext) {
+  const { id } = context.params;
 
+  try {
     const agendamentoDeletado = await prisma.agendamento.delete({
       where: { id },
     });
