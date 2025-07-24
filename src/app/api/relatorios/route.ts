@@ -1,28 +1,26 @@
-// src/app/api/relatorios/route.ts
-
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const startDate = searchParams.get("startDate"); // Data de início (YYYY-MM-DD)
-    const endDate = searchParams.get("endDate"); // Data de fim (YYYY-MM-DD)
+    const startDate = searchParams.get("startDate") ?? undefined;
+    const endDate = searchParams.get("endDate") ?? undefined;
 
-    let dateFilter: any = {};
-
+    const dateFilter: any = {};
     if (startDate) {
-      dateFilter.gte = new Date(`${startDate}T00:00:00.000Z`); // Início do dia
+      dateFilter.gte = new Date(`${startDate}T00:00:00.000Z`);
     }
     if (endDate) {
-      dateFilter.lte = new Date(`${endDate}T23:59:59.999Z`); // Fim do dia
+      dateFilter.lte = new Date(`${endDate}T23:59:59.999Z`);
     }
+
+    const whereFilter =
+      Object.keys(dateFilter).length > 0 ? { dataVenda: dateFilter } : {};
 
     // --- 1. Buscar Vendas Detalhadas no Período ---
     const vendas = await prisma.venda.findMany({
-      where: {
-        dataVenda: dateFilter,
-      },
+      where: whereFilter,
       include: {
         cliente: {
           select: {
@@ -73,7 +71,6 @@ export async function GET(request: Request) {
     } = {};
 
     for (const venda of vendas) {
-      // Itera sobre as vendas já buscadas
       for (const item of venda.itens) {
         if (item.produto) {
           const { id, nome, sku, tipo } = item.produto;
@@ -93,16 +90,16 @@ export async function GET(request: Request) {
       }
     }
 
-    // Converter para array e ordenar por quantidade vendida
     const relatorioProdutosMaisVendidos = Object.values(produtosAgregados).sort(
       (a, b) => b.totalQuantidadeVendida - a.totalQuantidadeVendida
     );
 
-    // --- NOVIDADE AQUI: 3. Buscar e Agregar Agendamentos no Período ---
+    // --- 3. Buscar e Agregar Agendamentos no Período ---
     const agendamentos = await prisma.agendamento.findMany({
-      where: {
-        dataAgendamento: dateFilter,
-      },
+      where:
+        Object.keys(dateFilter).length > 0
+          ? { dataAgendamento: dateFilter }
+          : {},
       include: {
         cliente: {
           select: {
@@ -137,7 +134,6 @@ export async function GET(request: Request) {
         totalVendasPeriodo,
         totalItensVendidosGeral,
         relatorioProdutosMaisVendidos,
-        // --- NOVIDADE AQUI: Dados de agendamento ---
         agendamentosDetalhados: agendamentos,
         totalAgendamentosPeriodo,
         agendamentosPorTipo,
