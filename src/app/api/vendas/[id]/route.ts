@@ -1,9 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import type { RouteContext } from "next"; // ✅ Import correto exigido pelo build
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+interface RouteContext {
+  params: { id: string };
+}
+
 // Função para obter uma venda específica por ID (GET /api/vendas/[id])
-export async function GET(request: NextRequest, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   try {
     const { id } = context.params;
 
@@ -51,7 +54,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 // PATCH
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export async function PATCH(request: Request, context: RouteContext) {
   try {
     const { id } = context.params;
     const body = await request.json();
@@ -85,7 +88,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 // DELETE
-export async function DELETE(request: NextRequest, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
     const { id } = context.params;
 

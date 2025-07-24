@@ -1,9 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { type RouteContext } from "next/dist/server/app-render/types"; // Importa tipo correto
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+interface RouteContext {
+  params: { id: string };
+}
+
 // GET /api/produtos/[id]
-export async function GET(request: NextRequest, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   try {
     const { id } = context.params;
 
@@ -27,7 +30,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 // PATCH /api/produtos/[id]
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export async function PATCH(request: Request, context: RouteContext) {
   try {
     const { id } = context.params;
     const body = await request.json();
@@ -144,7 +147,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 // DELETE /api/produtos/[id]
-export async function DELETE(request: NextRequest, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
     const { id } = context.params;
 

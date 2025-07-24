@@ -2,10 +2,13 @@
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import type { RequestContext } from "next/dist/server/app-route/module";
+
+interface RouteContext {
+  params: { id: string };
+}
 
 // Função para obter um cliente específico por ID (GET /api/clientes/[id])
-export async function GET(request: Request, context: RequestContext) {
+export async function GET(request: Request, context: RouteContext) {
   try {
     const { id } = context.params;
 
@@ -38,7 +41,7 @@ export async function GET(request: Request, context: RequestContext) {
 }
 
 // Função para excluir um cliente por ID (DELETE /api/clientes/[id])
-export async function DELETE(request: Request, context: RequestContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
     const { id } = context.params;
 
@@ -66,7 +69,7 @@ export async function DELETE(request: Request, context: RequestContext) {
 }
 
 // Função para atualizar um cliente por ID (PATCH /api/clientes/[id])
-export async function PATCH(request: Request, context: RequestContext) {
+export async function PATCH(request: Request, context: RouteContext) {
   try {
     const { id } = context.params;
     const body = await request.json();
