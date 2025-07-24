@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function GET(request: NextRequest, context: any) {
-  const { id } = context.params;
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+
+  if (!id) {
+    return NextResponse.json({ message: "ID é obrigatório" }, { status: 400 });
+  }
 
   try {
     const agendamento = await prisma.agendamento.findUnique({
@@ -36,8 +43,15 @@ export async function GET(request: NextRequest, context: any) {
   }
 }
 
-export async function PATCH(request: NextRequest, context: any) {
-  const { id } = context.params;
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+
+  if (!id) {
+    return NextResponse.json({ message: "ID é obrigatório" }, { status: 400 });
+  }
 
   try {
     const body = await request.json();
@@ -48,6 +62,8 @@ export async function PATCH(request: NextRequest, context: any) {
       if (body.dataAgendamento === null || body.dataAgendamento === "") {
         dataToUpdate.dataAgendamento = null;
       } else {
+        // Você pode testar salvar como string ISO ou Date
+        // Se prisma espera Date, mantenha assim
         const parsedDate = new Date(body.dataAgendamento);
         if (isNaN(parsedDate.getTime())) {
           return NextResponse.json(
@@ -87,8 +103,15 @@ export async function PATCH(request: NextRequest, context: any) {
   }
 }
 
-export async function DELETE(request: NextRequest, context: any) {
-  const { id } = context.params;
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+
+  if (!id) {
+    return NextResponse.json({ message: "ID é obrigatório" }, { status: 400 });
+  }
 
   try {
     const agendamentoDeletado = await prisma.agendamento.delete({
