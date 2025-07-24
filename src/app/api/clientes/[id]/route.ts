@@ -1,16 +1,13 @@
-// src/app/api/clientes/[id]/route.ts
-
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-interface RouteContext {
-  params: { id: string };
-}
-
 // Função para obter um cliente específico por ID (GET /api/clientes/[id])
-export async function GET(request: Request, context: RouteContext) {
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = context.params;
+    const { id } = params;
 
     const cliente = await prisma.cliente.findUnique({
       where: { id },
@@ -41,9 +38,12 @@ export async function GET(request: Request, context: RouteContext) {
 }
 
 // Função para excluir um cliente por ID (DELETE /api/clientes/[id])
-export async function DELETE(request: Request, context: RouteContext) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = context.params;
+    const { id } = params;
 
     const clienteDeletado = await prisma.cliente.delete({
       where: { id },
@@ -69,9 +69,12 @@ export async function DELETE(request: Request, context: RouteContext) {
 }
 
 // Função para atualizar um cliente por ID (PATCH /api/clientes/[id])
-export async function PATCH(request: Request, context: RouteContext) {
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = context.params;
+    const { id } = params;
     const body = await request.json();
 
     const dataToUpdate: { [key: string]: any } = {};
